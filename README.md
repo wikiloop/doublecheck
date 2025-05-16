@@ -1,4 +1,7 @@
 # WikiLoop DoubleCheck: Fight vandalism on Wikipedia together
+
+Originally from [Google](https://github.com/google/wikiloop-doublecheck). Reviving as a open contributor project since 2025
+
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
