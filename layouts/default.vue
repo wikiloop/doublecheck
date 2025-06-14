@@ -19,7 +19,7 @@
       class="wldc-header navbar navbar-expand-lg navbar-light bg-light fixed-top shadow border-1"
     >
       <nav class="container-xl d-flex align-items-center">
-        <a class="navbar-brand" href="/">WikiLoop DoubleCheck</a>
+        <a class="navbar-brand" href="/">WikiLoop™️ DoubleCheck</a>
         <b-navbar-toggle target="nav-collapse" />
         <b-collapse id="nav-collapse" is-nav>
           <b-navbar-nav class="flex-grow-1 d-flex flex-wrap">
