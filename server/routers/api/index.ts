@@ -44,7 +44,17 @@ apiRouter.use('/action', actionRouter);
 apiRouter.use('/feed', feedRouter);
 apiRouter.use('/metrics', metricsRouter);
 apiRouter.get('/test', (req, res) => {res.send('test ok');});
-
+const started = new Date();
+apiRouter.get('/healthz', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    started, 
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    cpu: process.cpuUsage(),
+    uuid: '89d70f81-d069-43cf-ad7f-b932f7e3a24b',
+  });
+});
 apiRouter.use('/score', scoreRouter);
 apiRouter.use('/extra', scoreRouter);
 
