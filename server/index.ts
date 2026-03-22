@@ -20,6 +20,7 @@ import { debugRouter } from '@/server/routers/debug';
 import { CronJob } from 'cron';
 import { FeedRevisionEngine } from '@/server/feed/feed-revision-engine';
 import { AwardBarnStarCronJob } from '../cronjobs/award-barnstar.cron';
+import { PurgeCollectionsCronJob } from '../cronjobs/purge-collections.cron';
 import { apiRouter as newApiRouter } from './routers/api';
 import { getMetrics } from './routers/api/metrics';
 import { apiLogger, asyncHandler, ensureAuthenticated, fetchRevisions, isWhitelistedFor, logger, perfLogger, useOauth, colorizeMaybe, latencyColor, statusColor } from './common';
@@ -143,6 +144,11 @@ function setupCronJobs() {
     }, null, false, process.env.CRON_TIMEZONE || 'America/Los_Angeles');
     feedRevisionCronJob.start();
   }
+
+  // Purge old data daily at 3am to keep DB within quota
+  const purgeTime = process.env.CRON_PURGE_TIME || '0 0 3 * * *';
+  const purgeJob = new PurgeCollectionsCronJob(purgeTime);
+  purgeJob.startCronJob();
 }
 
 function setupHooks() {
