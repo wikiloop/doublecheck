@@ -1,0 +1,236 @@
+<script setup lang="ts">
+import { ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import type {
+  Revision,
+  LiftWingScore,
+  JudgementAction,
+  RevisionResponse,
+  JudgementsResponse,
+} from "@doublecheck/core";
+import RevisionCard from "../components/RevisionCard.vue";
+import DiffBox from "../components/DiffBox.vue";
+import ActionPanel from "../components/ActionPanel.vue";
+import JudgementPanel from "../components/JudgementPanel.vue";
+
+const route = useRoute();
+const router = useRouter();
+const { t } = useI18n();
+
+const revision = ref<Revision | null>(null);
+const liftWingScore = ref<LiftWingScore | undefined>();
+const tallies = ref<Record<JudgementAction, number>>({
+  ShouldRevert: 0,
+  NotSure: 0,
+  LooksGood: 0,
+});
+const currentAction = ref<JudgementAction | null>(null);
+const loading = ref(false);
+const submitting = ref(false);
+
+async function loadRevision(wiki?: string, revId?: string | number) {
+  loading.value = true;
+  currentAction.value = null;
+  try {
+    if (wiki && revId) {
+      const res = await fetch(`/api/revision/${wiki}/${revId}`);
+      if (res.ok) {
+        const data: RevisionResponse = await res.json();
+        revision.value = data;
+        liftWingScore.value = data.liftWing;
+        await loadJudgements(wiki, Number(revId));
+      }
+    } else {
+      // Load next from default feed
+      const res = await fetch("/api/feed/default");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.items?.length > 0) {
+          const item = data.items[0];
+          revision.value = item;
+          router.replace(`/review/${item.wiki}/${item.revId}`);
+          await loadJudgements(item.wiki, item.revId);
+        }
+      }
+    }
+  } catch {
+    // API not available yet
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function loadJudgements(wiki: string, revId: number) {
+  try {
+    const res = await fetch(`/api/judgements/${wiki}/${revId}`);
+    if (res.ok) {
+      const data: JudgementsResponse = await res.json();
+      tallies.value = data.tallies;
+    }
+  } catch {
+    // ignore
+  }
+}
+
+async function onJudge(action: JudgementAction) {
+  if (!revision.value || submitting.value) return;
+  submitting.value = true;
+  currentAction.value = action;
+  try {
+    await fetch("/api/judgement", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        wiki: revision.value.wiki,
+        revId: revision.value.revId,
+        action,
+      }),
+    });
+    // Refresh tallies
+    await loadJudgements(revision.value.wiki, revision.value.revId);
+  } catch {
+    // ignore
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function loadNext() {
+  const feedName = "default";
+  try {
+    const res = await fetch(`/api/feed/${feedName}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.items?.length > 0) {
+        const item = data.items[0];
+        router.push(`/review/${item.wiki}/${item.revId}`);
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+onMounted(() => {
+  const wiki = route.params.wiki as string | undefined;
+  const revId = route.params.revId as string | undefined;
+  loadRevision(wiki, revId);
+});
+
+watch(
+  () => [route.params.wiki, route.params.revId],
+  ([wiki, revId]) => {
+    if (wiki && revId) {
+      loadRevision(wiki as string, revId as string);
+    }
+  }
+);
+</script>
+
+<template>
+  <div class="dc-review-page">
+    <meta name="robots" content="noindex" />
+
+    <div v-if="loading" class="dc-review-page__loading">
+      {{ t("Label-Loading") }}...
+    </div>
+
+    <template v-else-if="revision">
+      <RevisionCard
+        :revision="revision"
+        :lift-wing-score="liftWingScore"
+        :loading="false"
+      />
+
+      <DiffBox
+        :diff-html="revision.diffHtml ?? ''"
+        :loading="false"
+        class="dc-review-page__diff"
+      />
+
+      <div class="dc-review-page__panels">
+        <ActionPanel
+          :revision-wiki="revision.wiki"
+          :revision-id="revision.revId"
+          :current-action="currentAction"
+          :disabled="submitting"
+          @judge="onJudge"
+        />
+
+        <JudgementPanel
+          :tallies="tallies"
+          :user-action="currentAction"
+        />
+      </div>
+
+      <div class="dc-review-page__nav">
+        <button class="dc-btn dc-btn--primary" @click="loadNext">
+          {{ t("Button-Next") }}
+        </button>
+      </div>
+    </template>
+
+    <div v-else class="dc-review-page__empty">
+      <p>No revision loaded. Waiting for feed data...</p>
+      <button class="dc-btn dc-btn--primary" @click="loadNext">
+        {{ t("Button-Next") }}
+      </button>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.dc-review-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dc-review-page__loading,
+.dc-review-page__empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #54595d;
+}
+
+.dc-review-page__diff {
+  margin-top: 0.5rem;
+}
+
+.dc-review-page__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.dc-review-page__nav {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.dc-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.dc-btn--primary {
+  background: #3366cc;
+  color: #fff;
+}
+
+.dc-btn--primary:hover {
+  background: #2a4b8d;
+}
+
+@media (max-width: 600px) {
+  .dc-review-page__panels {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
