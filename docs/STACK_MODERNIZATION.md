@@ -345,38 +345,394 @@ A one-time Node.js migration script (`packages/server/scripts/migrate-mongo-to-m
 
 ## Migration & Rollout Plan
 
-This is a greenfield rewrite — the old Heroku app will be shut down and replaced, not incrementally migrated.
+This is a greenfield rewrite — the old Heroku app will be shut down and replaced, not incrementally migrated. Work is structured so that multiple subagents (developers or AI agents) can build packages **in parallel** after shared foundations are in place.
 
-### Phase 1 — Foundation
+### Phase -1 — Demolition (clean slate on `v5` branch)
 
-- Set up pnpm monorepo, TypeScript config, ESLint flat config, Prettier
-- `packages/server`: Hono API server with Drizzle ORM, MariaDB schema, basic CRUD endpoints
-- Drizzle migrations for all tables
-- CI pipeline (GitHub Actions): lint, type-check, unit tests per package
+Create a `v5` branch from `master`, then remove all old application code. The v5 branch starts empty except for assets to carry forward and this plan document. Everything else is rebuilt from scratch.
 
-### Phase 2 — Core & Web SPA
+#### Branch Setup
 
-- `packages/core`: shared Vue 3 components (RevisionCard, DiffBox, ActionPanel, JudgementPanel), composables, API client
-- `packages/web`: Vite SPA with Codex, vue-router, OAuth 2.0 login, review flow
-- Landing page with SEO
+```bash
+git checkout master
+git checkout -b v5
+```
 
-### Phase 3 — UserScript
+#### Assets to Preserve (copy to `v5-assets/` before demolition)
 
-- `packages/userscript`: Vite IIFE build, ResourceLoader integration, Vue 3 fallback
-- Diff page injection + RecentChanges/Watchlist badges
-- Identity detection (`mw.user.isNamed()` / `isTemp()` / `isAnon()`)
+These files represent community effort, branding, or historical context that cannot be regenerated.
 
-### Phase 4 — Chrome Extension
+**Branding & Icons** — needed for the new Web SPA, Extension, and UserScript panel header:
 
-- `packages/extension`: CRXJS Vite build, Manifest V3, content script, popup, OAuth via `chrome.identity`
-- Chrome Web Store submission
+| File | Purpose | Used by |
+|------|---------|---------|
+| `static/wikiloop-doublecheck-logo.svg` | Primary brand logo (vector) | Web SPA, Extension popup, landing page |
+| `static/wikiloop-doublecheck-logo.png` | Primary brand logo (raster) | OpenGraph image, Chrome Web Store listing |
+| `static/wikiloop-logo.svg` | Parent project logo (vector) | Landing page footer |
+| `static/wikiloop-logo.png` | Parent project logo (raster) | Fallback |
+| `static/favicon.ico` | Browser favicon | Web SPA |
+| `static/icon.png` | App icon | Extension, PWA manifest |
 
-### Phase 5 — Data Migration & Launch
+**Translations (26 languages)** — significant community contribution, convert from YAML to JSON during Phase 2:
 
-- Run MongoDB → MariaDB migration script
-- Deploy to Toolforge Buildpacks
-- Shut down old Heroku app
-- Decommission MongoDB Atlas after 30-day holding period
+| Directory | Contents |
+|-----------|----------|
+| `i18n/locales/*.yml` | `af`, `ar`, `bg`, `ca`, `cs`, `de`, `en`, `es`, `fa`, `fr`, `he`, `id`, `it`, `ja`, `ko`, `lv`, `nl`, `pl`, `pt`, `ru`, `sv`, `th`, `tr`, `uk`, `zh` |
+
+**Test fixtures** — real MediaWiki API responses, useful as reference for the new API client and migration script:
+
+| Directory | Contents |
+|-----------|----------|
+| `test/testdata/mwapi/small/*.json` | Sample MW API responses (enwiki, zhwiki, wikidatawiki) + datamap |
+| `test/testdata/mwapi/large/*.json` | Larger MW API response samples |
+| `test/testdata/wikitrust_feed.json` | WikiTrust scoring feed sample |
+
+**Project history & legal:**
+
+| File | Purpose |
+|------|---------|
+| `LICENSE` | Apache-2.0 — must remain in repo root |
+| `CHANGELOG.md` | Version history through v4 — keep for reference |
+| `.all-contributorsrc` | Contributor attribution metadata |
+
+**This plan:**
+
+| File | Purpose |
+|------|---------|
+| `docs/STACK_MODERNIZATION.md` | The v5 blueprint — the only document that drives implementation |
+
+#### What Gets Deleted (everything else)
+
+All old application code, config, and build artifacts. For reference, this includes:
+
+| Category | Paths |
+|----------|-------|
+| Nuxt 2 app | `pages/`, `layouts/`, `components/`, `store/`, `plugins/`, `middleware/`, `nuxt.config.js`, `custom.scss`, `vue-shim.d.ts` |
+| Express server | `server/`, `cronjobs/`, `mailer/`, `tscmd/`, `cross-edits-detection/` |
+| Old shared code | `shared/` |
+| Old build/config | `package.json`, `yarn.lock`, `.yarnrc`, `.nvmrc`, `.babelrc`, `.eslintrc.yml`, `tsconfig.json`, `jest*.config.js`, `jest.setup.js`, `typedoc.json`, `commitlint.config.js`, `eco.yml`, `renovate.json` |
+| Old deployment | `Procfile`, `app.json`, `heroku.env`, `template.env`, `.circleci/` |
+| Old CI/GitHub | `.github/config.yml`, `.github/weekly-digest.yml` |
+| Generated/cached | `.nuxt/`, `node_modules/`, `package-lock.json`, `tmp/` |
+| Old scripts | `scripts/` |
+| Old test infra | `test/` (fixtures already copied to `v5-assets/`) |
+| Old assets dir | `assets/` (demo GIFs and legacy icons — not needed for v5) |
+| Old static dir | `static/` (logos already copied to `v5-assets/`) |
+| Old docs | `docs/` (TypeDoc output — will be regenerated), `README.md`, `ARCHITECT.md`, `CONTRIBUTING.md` |
+| Claude config | `.agents/`, `.claude/`, `skills-lock.json` |
+| VS Code | `.vscode/` |
+
+#### Demolition Script
+
+```bash
+# 1. Create v5 branch
+git checkout master && git checkout -b v5
+
+# 2. Copy assets to preserve
+mkdir -p v5-assets/branding v5-assets/i18n v5-assets/test-fixtures v5-assets/history
+
+cp static/wikiloop-doublecheck-logo.svg v5-assets/branding/
+cp static/wikiloop-doublecheck-logo.png v5-assets/branding/
+cp static/wikiloop-logo.svg v5-assets/branding/
+cp static/wikiloop-logo.png v5-assets/branding/
+cp static/favicon.ico v5-assets/branding/
+cp static/icon.png v5-assets/branding/
+
+cp -r i18n/locales/ v5-assets/i18n/
+cp -r test/testdata/ v5-assets/test-fixtures/
+
+cp CHANGELOG.md v5-assets/history/
+cp .all-contributorsrc v5-assets/history/
+
+# 3. Remove everything except what we keep
+#    (LICENSE, docs/STACK_MODERNIZATION.md, v5-assets/, .git/, .gitignore)
+find . -maxdepth 1 \
+  ! -name '.' ! -name '.git' ! -name '.gitignore' \
+  ! -name 'LICENSE' ! -name 'v5-assets' ! -name 'docs' \
+  -exec rm -rf {} +
+
+# Clean docs/ down to just the plan
+find docs/ ! -name 'STACK_MODERNIZATION.md' ! -name '.' -exec rm -rf {} +
+
+# 4. Commit the clean slate
+git add -A
+git commit -m "chore: demolish v4 codebase, preserve assets for v5 rewrite
+
+Remove all Nuxt 2 / Vue 2 / Express application code, config, and build
+artifacts. Preserve branding assets, 26 i18n translation files, test
+fixtures, changelog, and the v5 stack modernization plan.
+
+See docs/STACK_MODERNIZATION.md for the full v5 blueprint."
+```
+
+#### Post-Demolition: Repo State
+
+```
+v5 branch
+├── .git/
+├── .gitignore
+├── LICENSE
+├── docs/
+│   └── STACK_MODERNIZATION.md    ← the blueprint
+└── v5-assets/
+    ├── branding/
+    │   ├── wikiloop-doublecheck-logo.svg
+    │   ├── wikiloop-doublecheck-logo.png
+    │   ├── wikiloop-logo.svg
+    │   ├── wikiloop-logo.png
+    │   ├── favicon.ico
+    │   └── icon.png
+    ├── i18n/
+    │   ├── en.yml
+    │   ├── fr.yml
+    │   └── ... (26 locale files)
+    ├── test-fixtures/
+    │   ├── mwapi/small/
+    │   ├── mwapi/large/
+    │   └── wikitrust_feed.json
+    └── history/
+        ├── CHANGELOG.md
+        └── .all-contributorsrc
+```
+
+Phase 1 will move `v5-assets/branding/` → `packages/web/public/`, convert `v5-assets/i18n/*.yml` → `packages/core/i18n/*.json`, and reference `v5-assets/test-fixtures/` from integration tests. The `v5-assets/` directory is deleted once everything is relocated.
+
+---
+
+### Phase 0 — Human Unblock (requires project owner, not dev agents)
+
+These are things **only you** can do — provisioning accounts, registering with external services, and proving that access works. Dev agents are blocked until these are confirmed. Each item includes a **smoke test** so you know it actually works.
+
+#### Toolforge Access
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Create `doublecheck` tool account on Toolforge (`toolforge-admin`) | `ssh doublecheck.toolforge.org` succeeds |
+| 2 | Verify ToolsDB credentials exist at `~/replica.my.cnf` | `sql tools` → `SELECT 1;` returns a row |
+| 3 | Verify Wikimedia replica access | `sql enwiki` → `SELECT rev_id FROM revision LIMIT 1;` returns a row |
+| 4 | Test a Buildpacks deploy with a hello-world Node app | `curl https://doublecheck.toolforge.org/` returns response |
+
+#### MediaWiki OAuth 2.0
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Register an OAuth 2.0 consumer at `meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration` | Consumer approved, `client_id` + `client_secret` received |
+| 2 | Set callback URLs: `https://doublecheck.toolforge.org/auth/callback`, `https://doublecheck.wikiloop.org/auth/callback` | — |
+| 3 | Test the token exchange manually | `curl -X POST https://meta.wikimedia.org/w/rest.php/oauth2/access_token -d 'grant_type=authorization_code&...'` returns an access token |
+
+#### MongoDB Atlas (migration only)
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Create a read-only user on the existing Atlas cluster | `mongosh $MONGO_URI --eval 'db.interactions.countDocuments()'` returns a count |
+
+#### Chrome Web Store
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Register a Chrome Web Store developer account ($5 fee) | Dashboard accessible at `chrome.google.com/webstore/devconsole` |
+
+#### GitHub Secrets
+
+After the above are provisioned, add these to the repo's GitHub Actions secrets:
+
+- `TOOLSDB_HOST`, `TOOLSDB_USER`, `TOOLSDB_PASSWORD`
+- `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`
+- `MONGO_URI` (temporary, for migration only)
+
+#### Phase 0 Validation Script
+
+Run `packages/server/scripts/validate-phase0.ts` (created by the Phase 1 agent) to confirm all external access is working. The script can also be run by a dev agent to programmatically verify before starting Phase 2.
+
+```
+$ pnpm run validate:phase0
+
+Phase 0 Validation
+==================
+
+Toolforge Access
+  [✓] SSH to doublecheck.toolforge.org .............. connected
+  [✓] ToolsDB query (SELECT 1) ...................... ok
+  [✓] Replica query (enwiki revision) ............... rev_id=1234567890
+  [✓] HTTPS endpoint reachable ...................... 200 OK
+
+MediaWiki OAuth 2.0
+  [✓] OAuth client_id is set ....................... ok
+  [✓] OAuth client_secret is set ................... ok
+  [✓] Token exchange endpoint reachable ............ 200 OK
+  [✓] Test token exchange .......................... access_token received
+  [✓] Token → userinfo call ........................ username=DoubleCheckBot
+
+MongoDB Atlas
+  [✓] MONGO_URI is set ............................. ok
+  [✓] Connection to Atlas cluster .................. connected
+  [✓] Read access (interactions count) ............. 48,231 documents
+  [✓] Read access (users count) .................... 1,205 documents
+
+Chrome Web Store
+  [✓] Developer account registered ................. (manual confirmation)
+
+GitHub Actions Secrets
+  [✓] TOOLSDB_HOST is set .......................... ok
+  [✓] TOOLSDB_USER is set .......................... ok
+  [✓] TOOLSDB_PASSWORD is set ...................... ok
+  [✓] OAUTH_CLIENT_ID is set ....................... ok
+  [✓] OAUTH_CLIENT_SECRET is set ................... ok
+  [✓] MONGO_URI is set ............................. ok
+
+==================
+Result: 18/18 passed, 0 failed
+Phase 0 is COMPLETE — ready for Phase 1.
+```
+
+The script validates:
+
+| Check | What it proves | Failure means |
+|-------|---------------|---------------|
+| SSH to Toolforge | Tool account exists, SSH key is configured | Tool not created, or SSH key not added to Toolforge |
+| ToolsDB SELECT 1 | Database credentials work, ToolsDB is reachable | `replica.my.cnf` missing or credentials wrong |
+| Replica revision query | Can read live Wikipedia data from Toolforge | Replica access not granted, or wrong host |
+| HTTPS endpoint | Buildpacks deploy pipeline works, ingress routes traffic | Build failed, or tool not webservice-enabled |
+| OAuth client_id/secret set | Credentials are available as env vars | Not provisioned or not added to `.env` / secrets |
+| Token exchange | OAuth consumer is approved and callback URLs are correct | Consumer pending approval, or wrong callback URL |
+| Token → userinfo | Full OAuth round-trip works; token has correct scopes | Insufficient scopes on the consumer registration |
+| MongoDB connection + counts | Atlas credentials work, data is readable | Wrong URI, IP allowlist blocking, or user lacks read access |
+| GitHub secrets set | CI pipeline will have access to all credentials | Secret not added to repo settings |
+
+**Phase 0 is done when the validation script reports all checks passed.** The Chrome Web Store check is manual (the script prompts for confirmation) since there's no API to verify account registration.
+
+> **Note:** The validation script itself is created during Phase 1 as part of monorepo scaffolding. Before that, use the individual smoke test commands listed in each section above.
+
+### Phase 1 — Foundation (sequential, single agent)
+
+Must complete before parallel work begins. One agent scaffolds the entire monorepo and defines all shared contracts.
+
+#### Monorepo Scaffolding
+
+- pnpm workspace, TypeScript config, ESLint flat config, Prettier
+- `docker-compose.yml` for local dev (MariaDB + MediaWiki containers)
+- `.env.example` listing every required variable with descriptions
+- CI pipeline (GitHub Actions): lint, type-check, unit tests per package, MariaDB service container, Playwright browsers
+
+#### Interface Contracts
+
+These are the boundaries between packages. Defined as TypeScript types/interfaces so all subagents code against the same contract.
+
+| Contract | Location | Defines | Consumers |
+|----------|----------|---------|-----------|
+| **API schema** | `packages/core/src/types/api.ts` | REST endpoint paths, request/response shapes for every route (judgement CRUD, revision feed, Lift Wing proxy, auth, SSE event types) | server, core API client, all three clients |
+| **Domain types** | `packages/core/src/types/models.ts` | `Revision`, `Judgement`, `User`, `Feed`, `LiftWingScore`, `WikiIdentity` (named / temp / anon) | all packages |
+| **Component props & events** | `packages/core/src/types/components.ts` | Props interfaces and emitted event payloads for `RevisionCard`, `DiffBox`, `ActionPanel`, `JudgementPanel` | core, web, userscript, extension |
+| **Drizzle schema** | `packages/server/src/db/schema.ts` | Table definitions — the single source of truth for database shape | server, migration script |
+| **i18n message keys** | `packages/core/i18n/en.json` | Canonical set of translation keys and English strings | all client packages |
+
+> **Rule:** If a subagent needs to change a shared contract, it must update the type file in `packages/core` (or `server/db/schema.ts`) and all subagents must pull the change before continuing.
+
+#### Exit Criteria
+
+- All subagents can `pnpm install`, import shared types, and run `pnpm test` with no errors
+- `docker compose up` starts MariaDB + MediaWiki locally
+- `drizzle-kit migrate` runs against local MariaDB successfully
+
+### Phase 2 — Parallel Build (6 subagents)
+
+Once Phase 1 is complete, the following workstreams run **concurrently**. Each subagent owns one package and codes against the shared contracts.
+
+```
+Phase 1 (Foundation)
+        │
+        ▼
+  ┌─────┼─────┬─────────┬────────────┬──────────────┐
+  ▼     ▼     ▼         ▼            ▼              ▼
+ [A]   [B]   [C]       [D]          [E]            [F]
+Server Core  Web SPA   UserScript   Extension      Migration
+                                                   Script
+  │     │     │         │            │              │
+  ▼     ▼     ▼         ▼            ▼              ▼
+  └─────┴─────┴─────────┴────────────┴──────────────┘
+        │
+        ▼
+  Phase 3 (Integration & Launch)
+```
+
+#### Subagent A — `packages/server`
+
+- Hono API server: all REST endpoints matching the API schema contract
+- OAuth 2.0 flow (MW consumer), session management
+- Server-side identity verification (MW API `userinfo` call)
+- Lift Wing proxy with caching
+- SSE endpoint with heartbeat + event IDs
+- CORS middleware (Wikipedia origins + extension origin)
+- Rate limiting, `/healthz` health check, structured logging (pino)
+- **Tests:** all server unit tests, integration tests against MariaDB Docker
+- **Dependencies on Phase 1:** Drizzle schema, API type definitions, `.env.example`
+- **No dependency on other subagents** — can validate with `curl` / Vitest against the API schema
+
+#### Subagent B — `packages/core`
+
+- Vue 3 components: RevisionCard, DiffBox, ActionPanel, JudgementPanel
+- Composables: `useRevision()`, `useJudgement()`, `useLiftWing()`
+- Typed API client (`fetch` wrapper implementing the API schema contract)
+- i18n setup: `vue-i18n` plugin, locale loading, message key access
+- **Tests:** all core component and composable unit tests
+- **Dependencies on Phase 1:** type definitions, `en.json` keys
+- **No dependency on other subagents** — tests mock the API client responses using the shared type definitions
+
+#### Subagent C — `packages/web`
+
+- Vite SPA: vue-router, landing page, review/feed/leaderboard/history routes
+- Bundles own Vue 3 + Codex
+- OAuth login flow (redirect-based)
+- SSE client with reconnection + polling fallback
+- SEO: meta tags, OpenGraph, JSON-LD, `noindex` on review pages
+- i18n: lazy-loaded locale bundles via `vue-i18n`
+- **Tests:** Web SPA E2E tests (Playwright)
+- **Depends on Subagent B** (`@doublecheck/core` components + API client)
+- **Can start immediately** on routing/layout/landing page while B builds components; integrates core components as they become available
+
+#### Subagent D — `packages/userscript`
+
+- Vite IIFE build with Vue 3 as external
+- ResourceLoader feature detection → self-hosted fallback → CSP failure handling
+- Diff page injection, RecentChanges/Watchlist badges
+- Identity detection (`mw.user.isNamed/isTemp/isAnon`)
+- i18n: `mw.msg()` integration with `vue-i18n` fallback
+- **Tests:** UserScript unit tests + E2E on MediaWiki Docker
+- **Depends on Subagent B** (`@doublecheck/core` components)
+- **Can start immediately** on IIFE build scaffolding, ResourceLoader detection, and MW identity logic while B builds components
+
+#### Subagent E — `packages/extension`
+
+- CRXJS Vite build, Manifest V3
+- Content script injection (same points as UserScript), popup UI
+- Background service worker: API routing, SSE relay, OAuth token management
+- `chrome.identity.launchWebAuthFlow()` OAuth flow
+- i18n: `vue-i18n` with `chrome.i18n.getUILanguage()` locale detection
+- **Tests:** Extension unit tests + E2E with Playwright `--load-extension`
+- **Depends on Subagent B** (`@doublecheck/core` components)
+- **Can start immediately** on Manifest V3 scaffolding, service worker, and `chrome.identity` flow while B builds components
+
+#### Subagent F — Migration Script
+
+- `packages/server/scripts/migrate-mongo-to-mariadb.ts`
+- MongoDB read → transform → MariaDB batch insert
+- Validation queries (row counts, spot checks, referential integrity)
+- **Tests:** integration test against MongoDB fixture + MariaDB Docker
+- **Dependencies on Phase 1:** Drizzle schema only
+- **No dependency on other subagents** — runs independently against database containers
+- **Requires:** MongoDB Atlas read-only credentials (temporary)
+
+### Phase 3 — Integration & Launch (sequential)
+
+After all subagents complete:
+
+1. **Integration testing**: wire all packages together; run full E2E suite against a staging Toolforge deployment
+2. **Run migration script** against production MongoDB → production MariaDB
+3. **Deploy to Toolforge Buildpacks** (run `drizzle-kit migrate` as `prestart` or one-off job first)
+4. **Submit Chrome Extension** to Chrome Web Store
+5. **Publish UserScript** installation instructions to Meta-Wiki
+6. **Shut down old Heroku app**
+7. **Decommission MongoDB Atlas** after 30-day holding period
 
 ### Deployment: Schema Migrations
 
@@ -393,21 +749,86 @@ Drizzle migrations must run **before** the new application code starts serving t
 
 ### Unit Tests (Vitest)
 
-- All packages use Vitest with Vite-native transforms
-- `packages/core`: component tests via `@testing-library/vue` — render components, assert DOM output and emitted events
-- `packages/server`: handler tests — mock database layer, test API route logic
-- Target: critical paths covered; no arbitrary coverage percentage mandate
+All packages use Vitest with Vite-native transforms. Target: critical paths covered; no arbitrary coverage percentage mandate.
+
+#### `packages/core` — Component & Composable Tests
+
+Via `@testing-library/vue` — render components, assert DOM output and emitted events.
+
+- **RevisionCard**: renders revision metadata (author, timestamp, wiki); shows loading skeleton while fetching
+- **DiffBox**: renders added/removed lines from diff2html output; handles empty diffs gracefully
+- **ActionPanel**: emits correct judgement values (`ShouldRevert`, `NotSure`, `LooksGood`) on button click; disables buttons after submission
+- **JudgementPanel**: displays community vote tallies; updates reactively when new votes arrive
+- **`useRevision()`**: fetches revision data from API client; returns error state on network failure
+- **`useJudgement()`**: submits judgement payload; distinguishes verified vs unverified attribution
+- **`useLiftWing()`**: parses Lift Wing response into damaging/good-faith scores; handles model unavailability
+- **API client**: constructs correct URLs and headers; retries on 5xx; respects abort signals
+
+#### `packages/server` — Handler & Middleware Tests
+
+Mock database layer, test API route logic.
+
+- **Judgement submission**: validates payload shape; rejects missing `wiki`/`rev_id`; stores with correct user attribution
+- **Revision feed**: returns paginated results; filters by wiki; respects `since` timestamp parameter
+- **Lift Wing proxy**: forwards requests to Lift Wing API; caches scores per revision; returns cached result on repeated requests
+- **OAuth 2.0 flow**: exchanges authorization code for token; creates/updates user record; sets session cookie
+- **Server-side identity verification**: calls MW API `action=query&meta=userinfo` with forwarded token; rejects mismatched usernames; marks temp account judgements as unverified
+- **CORS middleware**: allows requests from `*.wikipedia.org` origins; allows `chrome-extension://` origin; rejects unlisted origins; caches preflight responses
+- **SSE endpoint**: sends `:ping` heartbeat every 15s; streams new judgement events; includes `id` field for `Last-Event-ID` resume
+- **Rate limiting**: throttles excessive requests per IP/user; returns 429 with `Retry-After` header
+- **Health check**: `GET /healthz` returns 200 when MariaDB is connected; returns 503 when connection is lost
+
+#### `packages/userscript` — UserScript-Specific Tests
+
+- **Runtime detection**: correctly identifies ResourceLoader Vue 3 availability; falls back to self-hosted bundle when `mw.loader` cannot resolve `vue`
+- **CSP failure handling**: catches blocked script load; logs `[DoubleCheck]` warning; does not inject DOM elements
+- **Identity detection**: correctly classifies `mw.user.isNamed()`, `mw.user.isTemp()`, `mw.user.isAnon()` states; extracts `wgUserName` for named and temp accounts; returns `null` for anonymous
+- **i18n fallback**: uses `mw.msg()` when available; falls back to `vue-i18n` when `mw.messages` is not loaded
+
+#### `packages/extension` — Extension-Specific Tests
+
+- **Background service worker**: routes API calls from content script; manages OAuth token lifecycle in `chrome.storage.session`; handles SSE connection and forwards events to content script
+- **Content script isolation**: injects into Wikipedia pages without interfering with page scripts; cleans up on navigation
 
 ### Integration Tests
 
-- `packages/server`: test against a real MariaDB instance (Docker in CI) — verify Drizzle queries, migration correctness, and API contract
-- Database migration script: run against a MongoDB fixture dump and verify output in MariaDB
+Run against real services (Docker in CI).
+
+- **Drizzle queries against MariaDB**: CRUD operations on all tables; migration up/down idempotency; verify foreign key constraints
+- **API contract tests**: full request/response cycle through Hono handlers against real MariaDB — submit judgement, fetch feed, verify stored data matches
+- **Database migration script**: run `migrate-mongo-to-mariadb.ts` against a MongoDB fixture dump; verify row counts match document counts; spot-check `wikiRevId` decomposition into `wiki` + `rev_id`; verify referential integrity across tables
+- **Multi-host database access**: connect to ToolsDB and replica hosts separately; verify read-only enforcement on replica connections
 
 ### E2E Tests (Playwright)
 
-- `packages/web`: Playwright tests against a running dev server — login flow, review flow, feed navigation
-- `packages/userscript`: Playwright with a local MediaWiki Docker instance (from `mediawiki-docker`) — verify injection on diff pages and RecentChanges, identity detection, vote submission
-- `packages/extension`: Playwright with `--load-extension` flag to test content script injection and popup
+#### `packages/web` — Web SPA
+
+Playwright tests against a running dev server.
+
+- **OAuth login flow**: redirect to MW OAuth → callback → session established → username displayed
+- **Review flow**: load revision → see diff + Lift Wing scores → submit judgement → see updated community tally
+- **Feed navigation**: paginate through revision feed; filter by wiki; see risk badges
+- **Leaderboard**: displays ranked users; updates after new judgements
+- **Landing page SEO**: verify `<title>`, `og:*` meta tags, JSON-LD structured data are present; verify review pages have `noindex`
+
+#### `packages/userscript` — UserScript on MediaWiki
+
+Playwright with a local MediaWiki Docker instance (`mediawiki-docker`).
+
+- **Diff page injection**: navigate to `Special:Diff/*` → DoubleCheck panel appears below diff → Lift Wing scores displayed → vote buttons functional
+- **RecentChanges badges**: navigate to `Special:RecentChanges` → risk badges appear on edit rows with correct color coding
+- **Watchlist badges**: same as RecentChanges on `Special:Watchlist`
+- **Identity detection**: log in as named user → verify `isNamed()` path; browse anonymously → verify `isAnon()` path and read-only mode
+- **Vue 3 fallback**: test against a MediaWiki instance without ResourceLoader Vue 3 → verify self-hosted bundle loads and panel renders
+
+#### `packages/extension` — Chrome Extension
+
+Playwright with `--load-extension` flag.
+
+- **Content script injection**: navigate to Wikipedia diff page → review panel appears → vote buttons work
+- **Popup**: click extension icon → popup shows leaderboard and settings
+- **OAuth flow**: trigger login from popup → `chrome.identity` flow completes → token stored → authenticated API calls succeed
+- **CSP isolation**: verify content script does not trigger CSP violations on Wikipedia pages
 
 ### CI Pipeline (GitHub Actions)
 
