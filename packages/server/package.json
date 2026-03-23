@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --passWithNoTests --dir src/__tests__/integration",
     "validate:phase0": "tsx scripts/validate-phase0.ts"
   },
   "dependencies": {
