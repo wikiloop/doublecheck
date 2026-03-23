@@ -1,0 +1,32 @@
+/* DoubleCheck Risk Badges — injected into RecentChanges/Watchlist rows */
+
+.dc-risk-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-right: 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.dc-badge-high {
+  background: #fee7e6;
+  color: #d33;
+  border: 1px solid #d33;
+}
+
+.dc-badge-medium {
+  background: #fef6e7;
+  color: #705000;
+  border: 1px solid #edba1a;
+}
+
+.dc-badge-low {
+  background: #d5fdf4;
+  color: #14866d;
+  border: 1px solid #14866d;
+}
