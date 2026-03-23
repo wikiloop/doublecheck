@@ -1,1 +1,1 @@
-web: ts-node -r tsconfig-paths/register --project tsconfig.json ./server/index.ts
+web: node --max-old-space-size=450 -r ts-node/register -r tsconfig-paths/register ./server/index.ts
