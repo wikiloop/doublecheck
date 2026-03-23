@@ -14,10 +14,17 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "vue-i18n": "^9.14.0"
+  },
   "peerDependencies": {
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "@testing-library/vue": "^8.1.0",
+    "@vitejs/plugin-vue": "^5.2.0",
+    "@vue/test-utils": "^2.4.0",
+    "happy-dom": "^16.6.0",
     "typescript": "^5.0.0",
     "vitest": "^3.0.0",
     "vue": "^3.5.0"
