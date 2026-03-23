@@ -67,19 +67,22 @@ export function createApp(): Hono {
   return app;
 }
 
-// Only start server when running directly (not during tests)
+// Start server when running directly (not during tests)
+// Detect: either `node dist/index.js` or `tsx src/index.ts`
+const scriptPath = process.argv[1] ?? "";
 const isDirectRun =
-  process.argv[1]?.includes("index") ?? false;
+  scriptPath.endsWith("/index.js") ||
+  scriptPath.endsWith("/index.ts") ||
+  scriptPath.includes("dist/index");
 
 if (isDirectRun) {
   const app = createApp();
 
-  // Connect to MongoDB
+  // Connect to MongoDB (non-blocking — server starts even if DB is unavailable)
   connectDB()
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => {
-      console.error("MongoDB connection failed:", err);
-      process.exit(1);
+      console.error("MongoDB connection failed (server continues without DB):", err.message ?? err);
     });
 
   const port = parseInt(process.env.PORT || "8000", 10);
