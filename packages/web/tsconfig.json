@@ -2,8 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "jsx": "preserve"
   },
-  "include": ["src"],
+  "include": ["src", "src/env.d.ts"],
   "references": [{ "path": "../core" }]
 }

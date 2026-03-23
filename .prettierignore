@@ -1,0 +1,4 @@
+dist
+node_modules
+v5-assets
+pnpm-lock.yaml

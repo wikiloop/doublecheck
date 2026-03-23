@@ -1,0 +1,46 @@
+# Local development services for WikiLoop DoubleCheck v5
+# Usage: docker compose up -d
+
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - doublecheck-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mediawiki:
+    image: mediawiki:1.43
+    ports:
+      - "8080:80"
+    depends_on:
+      mediawiki-db:
+        condition: service_healthy
+    volumes:
+      - ./docker/mediawiki/LocalSettings.php:/var/www/html/LocalSettings.php
+
+  mediawiki-db:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: mediawiki-root
+      MYSQL_DATABASE: mediawiki
+      MYSQL_USER: mediawiki
+      MYSQL_PASSWORD: mediawiki
+    volumes:
+      - doublecheck-mw-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  doublecheck-mongo-data:
+  doublecheck-mw-db-data:

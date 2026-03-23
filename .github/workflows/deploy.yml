@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - "v5.*"
+
+jobs:
+  deploy-toolforge:
+    name: Deploy to Toolforge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Placeholder — Toolforge deployment
+        run: |
+          echo "Toolforge deployment not yet configured."
+          echo "Tag: ${{ github.ref_name }}"
+          echo "This job will deploy the server + web SPA to Toolforge."
+
+  deploy-vercel:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Placeholder — Vercel deployment
+        run: |
+          echo "Vercel deployment may be handled automatically via Vercel GitHub integration."
+          echo "Tag: ${{ github.ref_name }}"
+          echo "If manual deployment is needed, add Vercel CLI steps here."

@@ -87,6 +87,7 @@ tmp/
 
 dev.env
 .env.*
+!.env.example
 
 # Credentials
 .creds/
@@ -109,3 +110,5 @@ reports
 .env.local
 .env.wikiloop
 .env.toolforge
+.vercel
+*.tsbuildinfo
