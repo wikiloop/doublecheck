@@ -9,6 +9,9 @@ app.get("/api/health", (c) =>
   c.json({ status: "ok", app: "WikiLoop DoubleCheck", version: "5.0.0-alpha.0" })
 );
 
+// Serve userscript for direct installation
+app.use("/doublecheck.user.js", serveStatic({ root: "./packages/userscript", path: "wikiloop-doublecheck.user.js" }));
+
 // Serve Vue SPA static files
 app.use("/*", serveStatic({ root: "./dist/web" }));
 app.use("/*", serveStatic({ root: "./dist/web", path: "index.html" }));
