@@ -1,0 +1,151 @@
+/* DoubleCheck Review Panel — injected below diffs on Wikipedia */
+
+.dc-panel {
+  margin: 16px 0;
+  border: 1px solid #a2a9b1;
+  border-radius: 4px;
+  background: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #202122;
+}
+
+.dc-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #eaecf0;
+  border-bottom: 1px solid #a2a9b1;
+  border-radius: 4px 4px 0 0;
+}
+
+.dc-panel-logo {
+  font-weight: 700;
+  color: #36c;
+}
+
+.dc-panel-body {
+  padding: 12px;
+}
+
+.dc-loading,
+.dc-error {
+  text-align: center;
+  padding: 8px;
+  color: #54595d;
+}
+
+.dc-error {
+  color: #d33;
+}
+
+/* Score progress bars */
+.dc-scores {
+  margin-bottom: 12px;
+}
+
+.dc-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.dc-score-label {
+  flex: 0 0 80px;
+  font-size: 13px;
+  color: #54595d;
+}
+
+.dc-progress-bar {
+  flex: 1;
+  height: 12px;
+  background: #eaecf0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.dc-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.dc-score-value {
+  flex: 0 0 40px;
+  font-size: 12px;
+  text-align: right;
+  color: #54595d;
+}
+
+/* Action buttons */
+.dc-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.dc-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border: 1px solid #a2a9b1;
+  border-radius: 4px;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: #202122;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.dc-btn:hover:not(:disabled) {
+  background: #eaecf0;
+}
+
+.dc-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.dc-btn-active {
+  font-weight: 700;
+}
+
+.dc-btn-revert {
+  border-color: #d33;
+  color: #d33;
+}
+
+.dc-btn-revert.dc-btn-active {
+  background: #d33;
+  color: #fff;
+}
+
+.dc-btn-unsure {
+  border-color: #fc3;
+  color: #705000;
+}
+
+.dc-btn-unsure.dc-btn-active {
+  background: #fc3;
+  color: #202122;
+}
+
+.dc-btn-good {
+  border-color: #14866d;
+  color: #14866d;
+}
+
+.dc-btn-good.dc-btn-active {
+  background: #14866d;
+  color: #fff;
+}
+
+.dc-tally {
+  margin-left: 4px;
+  font-size: 11px;
+  opacity: 0.7;
+}
