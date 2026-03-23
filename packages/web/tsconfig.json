@@ -1,10 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
   },
-  "include": ["src", "src/env.d.ts"],
-  "references": [{ "path": "../core" }]
+  "include": ["src", "src/env.d.ts"]
 }

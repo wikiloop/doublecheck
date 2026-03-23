@@ -14,8 +14,8 @@ export interface I18nSetupOptions {
  * Creates a vue-i18n instance pre-loaded with the English locale.
  * Additional locales can be lazy-loaded via `loadLocale()`.
  */
-export function createDoubleCheckI18n(options: I18nSetupOptions = {}): I18n {
-  const i18n = createI18n({
+export function createDoubleCheckI18n(options: I18nSetupOptions = {}) {
+  return createI18n({
     legacy: false,
     locale: options.locale ?? "en",
     fallbackLocale: options.fallbackLocale ?? "en",
@@ -23,8 +23,6 @@ export function createDoubleCheckI18n(options: I18nSetupOptions = {}): I18n {
       en: enMessages,
     },
   });
-
-  return i18n;
 }
 
 /**

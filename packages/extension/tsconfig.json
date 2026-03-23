@@ -4,7 +4,7 @@
     "rootDir": ".",
     "outDir": "dist",
     "jsx": "preserve",
-    "types": ["chrome"],
+    "types": ["chrome", "vitest/globals"],
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "paths": {
       "@/*": ["./src/*"]
