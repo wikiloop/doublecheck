@@ -19,11 +19,16 @@ const props = withDefaults(defineProps<DiffBoxProps>(), {
       </div>
     </template>
     <template v-else-if="!props.diffHtml">
-      <p class="dc-diff-box__empty">No diff available for this revision.</p>
+      <p class="dc-diff-box__empty">
+        No diff available for this revision.
+      </p>
     </template>
     <template v-else>
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="dc-diff-box__content" v-html="props.diffHtml" />
+      <div
+        class="dc-diff-box__content"
+        v-html="props.diffHtml"
+      />
     </template>
   </div>
 </template>

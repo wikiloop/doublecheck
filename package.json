@@ -9,7 +9,10 @@
   },
   "scripts": {
     "dev": "pnpm --filter @doublecheck/server dev",
-    "build": "pnpm --filter @doublecheck/web build && pnpm --filter @doublecheck/server build",
+    "build": "pnpm --filter @doublecheck/web build && pnpm --filter @doublecheck/userscript build && pnpm --filter @doublecheck/server build",
+    "build:web": "pnpm --filter @doublecheck/web build",
+    "build:userscript": "pnpm --filter @doublecheck/userscript build",
+    "build:server": "pnpm --filter @doublecheck/server build",
     "start": "pnpm --filter @doublecheck/server start",
     "lint": "eslint .",
     "format": "prettier --write .",

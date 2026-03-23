@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { Hono } from "hono";
 import { corsMiddleware } from "../middleware/cors.js";
 import { rateLimitMiddleware } from "../middleware/rateLimit.js";

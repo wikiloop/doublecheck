@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // TODO: replace with @doublecheck/core component when available
-import type { ActionPanelProps, ActionPanelEmits } from "@doublecheck/core";
+import type { ActionPanelProps } from "@doublecheck/core";
 import type { JudgementAction } from "@doublecheck/core";
 import { useI18n } from "vue-i18n";
 
@@ -18,7 +18,9 @@ const actions: { key: JudgementAction; label: string; color: string }[] = [
 
 <template>
   <div class="dc-action-panel">
-    <h4 class="dc-action-panel__title">{{ t("Label-YourJudgement") }}</h4>
+    <h4 class="dc-action-panel__title">
+      {{ t("Label-YourJudgement") }}
+    </h4>
     <div class="dc-action-panel__buttons">
       <button
         v-for="action in actions"

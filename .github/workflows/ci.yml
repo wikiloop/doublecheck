@@ -30,6 +30,35 @@ jobs:
 
       - run: pnpm typecheck
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build Web SPA
+        run: pnpm --filter @doublecheck/web build
+
+      - name: Build UserScript
+        run: pnpm --filter @doublecheck/userscript build
+
+      - name: Build Server
+        run: pnpm --filter @doublecheck/server build
+
+      - name: Verify build artifacts
+        run: |
+          test -f dist/web/index.html
+          test -f packages/userscript/dist/wikiloop-doublecheck.user.js
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

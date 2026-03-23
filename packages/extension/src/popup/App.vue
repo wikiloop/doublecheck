@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* global chrome */
 import { ref, onMounted } from "vue";
 import { MessageType, type AuthStatusResponse } from "../background/messages.js";
 import type { LeaderboardEntry } from "@doublecheck/core";
@@ -123,7 +124,12 @@ function formatTime(timestamp: string): string {
       <h1>WikiLoop DoubleCheck</h1>
     </header>
 
-    <div v-if="loading" class="dc-popup-loading">Loading...</div>
+    <div
+      v-if="loading"
+      class="dc-popup-loading"
+    >
+      Loading...
+    </div>
 
     <template v-else>
       <!-- Auth Section -->
@@ -131,25 +137,41 @@ function formatTime(timestamp: string): string {
         <template v-if="loggedIn">
           <div class="dc-popup-user">
             <span class="dc-popup-username">{{ username }}</span>
-            <button class="dc-popup-btn dc-popup-btn--small" @click="logout">Logout</button>
+            <button
+              class="dc-popup-btn dc-popup-btn--small"
+              @click="logout"
+            >
+              Logout
+            </button>
           </div>
           <div class="dc-popup-stats">
             <span class="dc-popup-stat">Today: <strong>{{ todayCount }}</strong> judgements</span>
           </div>
         </template>
         <template v-else>
-          <p class="dc-popup-login-prompt">Log in to track your contributions</p>
-          <button class="dc-popup-btn dc-popup-btn--primary" @click="login">
+          <p class="dc-popup-login-prompt">
+            Log in to track your contributions
+          </p>
+          <button
+            class="dc-popup-btn dc-popup-btn--primary"
+            @click="login"
+          >
             Login with Wikipedia
           </button>
         </template>
       </section>
 
       <!-- Recent Activity -->
-      <section v-if="loggedIn && recentActivity.length > 0" class="dc-popup-section">
+      <section
+        v-if="loggedIn && recentActivity.length > 0"
+        class="dc-popup-section"
+      >
         <h2>Recent Activity</h2>
         <ul class="dc-popup-activity">
-          <li v-for="item in recentActivity" :key="`${item.wiki}-${item.revId}-${item.timestamp}`">
+          <li
+            v-for="item in recentActivity"
+            :key="`${item.wiki}-${item.revId}-${item.timestamp}`"
+          >
             <span class="dc-popup-activity-action">{{ formatAction(item.action) }}</span>
             <span class="dc-popup-activity-rev">{{ item.wiki }}:{{ item.revId }}</span>
             <span class="dc-popup-activity-time">{{ formatTime(item.timestamp) }}</span>
@@ -158,10 +180,16 @@ function formatTime(timestamp: string): string {
       </section>
 
       <!-- Mini Leaderboard -->
-      <section v-if="leaderboard.length > 0" class="dc-popup-section">
+      <section
+        v-if="leaderboard.length > 0"
+        class="dc-popup-section"
+      >
         <h2>Top Reviewers</h2>
         <ol class="dc-popup-leaderboard">
-          <li v-for="entry in leaderboard" :key="entry.userId">
+          <li
+            v-for="entry in leaderboard"
+            :key="entry.userId"
+          >
             <span class="dc-popup-lb-rank">#{{ entry.rank }}</span>
             <span class="dc-popup-lb-name">{{ entry.username }}</span>
             <span class="dc-popup-lb-count">{{ entry.count }}</span>
@@ -171,7 +199,11 @@ function formatTime(timestamp: string): string {
 
       <!-- Quick Links -->
       <section class="dc-popup-section dc-popup-links">
-        <a href="https://wikiloop-doublecheck.toolforge.org" target="_blank" rel="noopener">
+        <a
+          href="https://wikiloop-doublecheck.toolforge.org"
+          target="_blank"
+          rel="noopener"
+        >
           Open Dashboard
         </a>
       </section>

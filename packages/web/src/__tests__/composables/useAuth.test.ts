@@ -7,7 +7,7 @@ describe("useAuth", () => {
   });
 
   it("starts with logged-out state", () => {
-    const { user, isLoggedIn, loading } = useAuth();
+    const { isLoggedIn, loading } = useAuth();
     expect(isLoggedIn.value).toBe(false);
     expect(loading.value).toBe(false);
   });

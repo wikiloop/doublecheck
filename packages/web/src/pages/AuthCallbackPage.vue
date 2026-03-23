@@ -36,11 +36,19 @@ onMounted(async () => {
 
 <template>
   <div class="dc-auth-callback">
-    <div v-if="error" class="dc-auth-callback__error">
+    <div
+      v-if="error"
+      class="dc-auth-callback__error"
+    >
       <p>{{ error }}</p>
-      <router-link to="/">Return to home</router-link>
+      <router-link to="/">
+        Return to home
+      </router-link>
     </div>
-    <div v-else class="dc-auth-callback__loading">
+    <div
+      v-else
+      class="dc-auth-callback__loading"
+    >
       Completing login...
     </div>
   </div>

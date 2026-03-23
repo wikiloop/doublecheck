@@ -58,8 +58,6 @@ async function purgeCollection(
   }
 
   const col = db.collection(name);
-  const beforeCount = await col.countDocuments();
-
   let deleteResult: { deletedCount: number };
 
   if (name === "sessions") {

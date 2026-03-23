@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { JudgementAction } from "../types/index.js";
-import type { ActionPanelProps, ActionPanelEmits } from "../types/index.js";
+import type { ActionPanelProps } from "../types/index.js";
 
 const props = withDefaults(defineProps<ActionPanelProps>(), {
   disabled: false,

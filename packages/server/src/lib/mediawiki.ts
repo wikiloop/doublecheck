@@ -1,7 +1,5 @@
 import type { Revision } from "@doublecheck/core";
 
-const MW_API_BASE = "https://en.wikipedia.org/w/api.php";
-
 function apiUrl(wiki: string): string {
   // Map wiki identifier to MediaWiki API URL
   if (wiki === "enwiki" || wiki === "en.wikipedia.org") {

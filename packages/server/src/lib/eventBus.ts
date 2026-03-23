@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { JudgementEvent, SSEEvent } from "@doublecheck/core";
+import type { JudgementEvent } from "@doublecheck/core";
 
 class TypedEventBus extends EventEmitter {
   private eventCounter = 0;

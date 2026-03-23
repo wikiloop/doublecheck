@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { nextTick } from "vue";
+
 import { useRevision } from "../../composables/useRevision.js";
 import { createApiClient } from "../../api/client.js";
 import type { RevisionResponse } from "../../types/index.js";

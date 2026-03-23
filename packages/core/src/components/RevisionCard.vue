@@ -34,14 +34,23 @@ function pct(value: number): string {
       </div>
       <div class="dc-revision-card__meta">
         <span class="dc-revision-card__user">{{ props.revision.user }}</span>
-        <time class="dc-revision-card__time" :datetime="props.revision.timestamp">
+        <time
+          class="dc-revision-card__time"
+          :datetime="props.revision.timestamp"
+        >
           {{ formatDate(props.revision.timestamp) }}
         </time>
       </div>
-      <p v-if="props.revision.comment" class="dc-revision-card__comment">
+      <p
+        v-if="props.revision.comment"
+        class="dc-revision-card__comment"
+      >
         {{ props.revision.comment }}
       </p>
-      <div v-if="props.liftWingScore" class="dc-revision-card__scores">
+      <div
+        v-if="props.liftWingScore"
+        class="dc-revision-card__scores"
+      >
         <div class="dc-score">
           <label class="dc-score__label">Damaging</label>
           <div class="dc-score__bar">

@@ -64,20 +64,36 @@ onMounted(async () => {
 
 <template>
   <div class="dc-history-page">
-    <meta name="robots" content="noindex" />
+    <meta
+      name="robots"
+      content="noindex"
+    >
 
     <h1>{{ t("Label-MyHistory") }}</h1>
 
-    <div v-if="loading && judgements.length === 0" class="dc-history-page__loading">
+    <div
+      v-if="loading && judgements.length === 0"
+      class="dc-history-page__loading"
+    >
       {{ t("Label-Loading") }}...
     </div>
 
-    <div v-else-if="judgements.length === 0" class="dc-history-page__empty">
+    <div
+      v-else-if="judgements.length === 0"
+      class="dc-history-page__empty"
+    >
       No judgement history yet. Start reviewing!
     </div>
 
-    <ul v-else class="dc-history-list">
-      <li v-for="(j, i) in judgements" :key="i" class="dc-history-item">
+    <ul
+      v-else
+      class="dc-history-list"
+    >
+      <li
+        v-for="(j, i) in judgements"
+        :key="i"
+        class="dc-history-item"
+      >
         <router-link
           :to="`/review/${j.revisionWiki}/${j.revisionId}`"
           class="dc-history-item__link"
@@ -94,7 +110,10 @@ onMounted(async () => {
       </li>
     </ul>
 
-    <div v-if="nextCursor" class="dc-history-page__more">
+    <div
+      v-if="nextCursor"
+      class="dc-history-page__more"
+    >
       <button
         class="dc-btn dc-btn--secondary"
         :disabled="loading"

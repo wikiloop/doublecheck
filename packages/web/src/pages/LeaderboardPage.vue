@@ -39,7 +39,10 @@ watch(period, loadLeaderboard);
 
 <template>
   <div class="dc-leaderboard-page">
-    <meta name="robots" content="noindex" />
+    <meta
+      name="robots"
+      content="noindex"
+    >
 
     <div class="dc-leaderboard-page__header">
       <h1>{{ t("Label-TopUsers") }}</h1>
@@ -56,11 +59,17 @@ watch(period, loadLeaderboard);
       </div>
     </div>
 
-    <div v-if="loading" class="dc-leaderboard-page__loading">
+    <div
+      v-if="loading"
+      class="dc-leaderboard-page__loading"
+    >
       {{ t("Label-Loading") }}...
     </div>
 
-    <table v-else-if="entries.length > 0" class="dc-leaderboard-table">
+    <table
+      v-else-if="entries.length > 0"
+      class="dc-leaderboard-table"
+    >
       <thead>
         <tr>
           <th>{{ t("Label-Rank") }}</th>
@@ -69,15 +78,25 @@ watch(period, loadLeaderboard);
         </tr>
       </thead>
       <tbody>
-        <tr v-for="entry in entries" :key="entry.userId">
-          <td class="dc-rank">{{ entry.rank }}</td>
+        <tr
+          v-for="entry in entries"
+          :key="entry.userId"
+        >
+          <td class="dc-rank">
+            {{ entry.rank }}
+          </td>
           <td>{{ entry.username }}</td>
-          <td class="dc-count">{{ entry.count }}</td>
+          <td class="dc-count">
+            {{ entry.count }}
+          </td>
         </tr>
       </tbody>
     </table>
 
-    <div v-else class="dc-leaderboard-page__empty">
+    <div
+      v-else
+      class="dc-leaderboard-page__empty"
+    >
       No leaderboard data available yet.
     </div>
   </div>

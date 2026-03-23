@@ -10,16 +10,16 @@ function setupMwGlobal() {
       isAnon: vi.fn(() => false),
     },
     config: {
-      get: vi.fn((key: string) => {
-        if (key === "wgUserName") return "TestUser";
-        if (key === "wgDiffNewId") return 12345;
-        if (key === "wgDBname") return "enwiki";
-        if (key === "wgRevisionId") return 12345;
+      get: vi.fn((k: string) => {
+        if (k === "wgUserName") return "TestUser";
+        if (k === "wgDiffNewId") return 12345;
+        if (k === "wgDBname") return "enwiki";
+        if (k === "wgRevisionId") return 12345;
         return null;
       }),
     },
     messages: { set: vi.fn() },
-    message: vi.fn((_key: string) => ({
+    message: vi.fn(() => ({
       text: () => "",
       exists: () => false,
     })),

@@ -35,7 +35,7 @@ describe("i18n", () => {
     const g = globalThis as Record<string, unknown>;
     g.mw = {
       messages: { set: vi.fn() },
-      message: vi.fn((_key: string) => ({
+      message: vi.fn(() => ({
         text: () => "Sieht gut aus",
         exists: () => true,
       })),
@@ -49,7 +49,7 @@ describe("i18n", () => {
     const g = globalThis as Record<string, unknown>;
     g.mw = {
       messages: { set: vi.fn() },
-      message: vi.fn((_key: string) => ({
+      message: vi.fn(() => ({
         text: () => "",
         exists: () => false,
       })),

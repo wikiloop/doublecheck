@@ -31,13 +31,8 @@ export class ApiClient {
     const url = `${this.baseUrl}${path}`;
     const signal = init?.signal;
 
-    let response: Response;
-    try {
-      response = await fetch(url, init);
-    } catch (err) {
-      // Network error — no retry
-      throw err;
-    }
+    // Network error — no retry (let it propagate naturally)
+    let response: Response = await fetch(url, init);
 
     // Retry once on 5xx
     if (response.status >= 500) {

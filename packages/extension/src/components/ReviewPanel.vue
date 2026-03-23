@@ -83,13 +83,26 @@ function scoreLevel(score: number): string {
       <span class="dc-panel-title">WikiLoop DoubleCheck</span>
     </div>
 
-    <div v-if="loading" class="dc-loading">Loading...</div>
+    <div
+      v-if="loading"
+      class="dc-loading"
+    >
+      Loading...
+    </div>
 
-    <div v-else-if="error" class="dc-error">{{ error }}</div>
+    <div
+      v-else-if="error"
+      class="dc-error"
+    >
+      {{ error }}
+    </div>
 
     <template v-else>
       <!-- LiftWing Scores -->
-      <div v-if="liftWingScore" class="dc-scores">
+      <div
+        v-if="liftWingScore"
+        class="dc-scores"
+      >
         <span :class="['dc-score', `dc-score--${scoreLevel(liftWingScore.damaging)}`]">
           Damaging: {{ Math.round(liftWingScore.damaging * 100) }}%
         </span>

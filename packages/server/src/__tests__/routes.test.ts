@@ -138,7 +138,7 @@ describe("GET /api/revision/:wiki/:revId", () => {
     vi.mocked(RevisionModel.create).mockResolvedValue({
       ...mockRev,
       toObject: () => mockRev,
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof RevisionModel.create>>);
     vi.mocked(fetchLiftWingScore).mockRejectedValue(new Error("skip"));
 
     const res = await req("/api/revision/enwiki/99999");
@@ -212,7 +212,7 @@ describe("POST /api/judgement", () => {
       userId: "anonymous",
       identity: { type: "anon", username: null, verified: false },
       createdAt: new Date("2024-01-01T00:00:00Z"),
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof InteractionModel.create>>);
 
     const res = await req("/api/judgement", {
       method: "POST",
@@ -285,7 +285,7 @@ describe("GET /api/judgements/:wiki/:revId", () => {
       sort: vi.fn().mockReturnValue({
         lean: vi.fn().mockResolvedValue(mockDocs),
       }),
-    } as any);
+    } as unknown as ReturnType<typeof InteractionModel.find>);
 
     const res = await req("/api/judgements/enwiki/123");
     expect(res.status).toBe(200);
@@ -308,7 +308,7 @@ describe("GET /api/leaderboard", () => {
         { wikiUserName: "user1" },
         { wikiUserName: "user2" },
       ]),
-    } as any);
+    } as unknown as ReturnType<typeof UserModel.find>);
 
     const res = await req("/api/leaderboard");
     expect(res.status).toBe(200);
@@ -340,7 +340,7 @@ describe("GET /api/user/:userId/history", () => {
           lean: vi.fn().mockResolvedValue(mockDocs),
         }),
       }),
-    } as any);
+    } as unknown as ReturnType<typeof InteractionModel.find>);
 
     const res = await req("/api/user/testuser/history");
     expect(res.status).toBe(200);

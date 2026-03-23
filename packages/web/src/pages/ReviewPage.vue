@@ -131,9 +131,15 @@ watch(
 
 <template>
   <div class="dc-review-page">
-    <meta name="robots" content="noindex" />
+    <meta
+      name="robots"
+      content="noindex"
+    >
 
-    <div v-if="loading" class="dc-review-page__loading">
+    <div
+      v-if="loading"
+      class="dc-review-page__loading"
+    >
       {{ t("Label-Loading") }}...
     </div>
 
@@ -166,15 +172,24 @@ watch(
       </div>
 
       <div class="dc-review-page__nav">
-        <button class="dc-btn dc-btn--primary" @click="loadNext">
+        <button
+          class="dc-btn dc-btn--primary"
+          @click="loadNext"
+        >
           {{ t("Button-Next") }}
         </button>
       </div>
     </template>
 
-    <div v-else class="dc-review-page__empty">
+    <div
+      v-else
+      class="dc-review-page__empty"
+    >
       <p>No revision loaded. Waiting for feed data...</p>
-      <button class="dc-btn dc-btn--primary" @click="loadNext">
+      <button
+        class="dc-btn dc-btn--primary"
+        @click="loadNext"
+      >
         {{ t("Button-Next") }}
       </button>
     </div>

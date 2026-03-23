@@ -9,7 +9,9 @@ defineProps<JudgementPanelProps>();
 
 <template>
   <div class="dc-judgement-panel">
-    <h4 class="dc-judgement-panel__title">{{ t("Label-Judgement") }}</h4>
+    <h4 class="dc-judgement-panel__title">
+      {{ t("Label-Judgement") }}
+    </h4>
     <div class="dc-judgement-panel__tallies">
       <div class="dc-tally dc-tally--revert">
         <span class="dc-tally__label">{{ t("Label-ShouldRevert") }}</span>

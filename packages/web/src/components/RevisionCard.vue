@@ -2,7 +2,7 @@
 // TODO: replace with @doublecheck/core component when available
 import type { RevisionCardProps } from "@doublecheck/core";
 
-const props = defineProps<RevisionCardProps>();
+defineProps<RevisionCardProps>();
 
 function formatScore(score: number): string {
   return (score * 100).toFixed(0) + "%";
@@ -17,10 +17,17 @@ function scoreColor(score: number): string {
 
 <template>
   <div class="dc-revision-card">
-    <div v-if="loading" class="dc-revision-card__loading">Loading revision...</div>
+    <div
+      v-if="loading"
+      class="dc-revision-card__loading"
+    >
+      Loading revision...
+    </div>
     <template v-else>
       <div class="dc-revision-card__header">
-        <h3 class="dc-revision-card__title">{{ revision.title }}</h3>
+        <h3 class="dc-revision-card__title">
+          {{ revision.title }}
+        </h3>
         <span class="dc-revision-card__wiki">{{ revision.wiki }}</span>
       </div>
       <div class="dc-revision-card__meta">
@@ -28,10 +35,16 @@ function scoreColor(score: number): string {
         <span>by {{ revision.user }}</span>
         <span>{{ revision.timestamp }}</span>
       </div>
-      <p v-if="revision.comment" class="dc-revision-card__comment">
+      <p
+        v-if="revision.comment"
+        class="dc-revision-card__comment"
+      >
         {{ revision.comment }}
       </p>
-      <div v-if="liftWingScore" class="dc-revision-card__scores">
+      <div
+        v-if="liftWingScore"
+        class="dc-revision-card__scores"
+      >
         <span>
           Damaging:
           <strong :style="{ color: scoreColor(liftWingScore.damaging) }">

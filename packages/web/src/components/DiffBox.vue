@@ -7,9 +7,23 @@ defineProps<DiffBoxProps>();
 
 <template>
   <div class="dc-diff-box">
-    <div v-if="loading" class="dc-diff-box__loading">Loading diff...</div>
-    <div v-else-if="diffHtml" class="dc-diff-box__content" v-html="diffHtml" />
-    <div v-else class="dc-diff-box__empty">No diff available</div>
+    <div
+      v-if="loading"
+      class="dc-diff-box__loading"
+    >
+      Loading diff...
+    </div>
+    <div
+      v-else-if="diffHtml"
+      class="dc-diff-box__content"
+      v-html="diffHtml"
+    />
+    <div
+      v-else
+      class="dc-diff-box__empty"
+    >
+      No diff available
+    </div>
   </div>
 </template>
 

@@ -10,36 +10,58 @@ const { user, isLoggedIn, login, logout } = useAuth();
   <div class="dc-app-layout">
     <header class="dc-header">
       <div class="dc-header-inner">
-        <router-link to="/" class="dc-logo-link">
+        <router-link
+          to="/"
+          class="dc-logo-link"
+        >
           <img
             src="/wikiloop-doublecheck-logo.svg"
             alt="WikiLoop DoubleCheck"
             class="dc-logo"
-          />
+          >
         </router-link>
         <nav class="dc-nav">
-          <router-link to="/review" class="dc-nav-link">
+          <router-link
+            to="/review"
+            class="dc-nav-link"
+          >
             {{ t("Label-ReviewFeed") }}
           </router-link>
-          <router-link to="/feed" class="dc-nav-link">
+          <router-link
+            to="/feed"
+            class="dc-nav-link"
+          >
             {{ t("Label-Feed") }}
           </router-link>
-          <router-link to="/leaderboard" class="dc-nav-link">
+          <router-link
+            to="/leaderboard"
+            class="dc-nav-link"
+          >
             {{ t("Label-TopUsers") }}
           </router-link>
-          <router-link v-if="isLoggedIn" to="/history" class="dc-nav-link">
+          <router-link
+            v-if="isLoggedIn"
+            to="/history"
+            class="dc-nav-link"
+          >
             {{ t("Label-MyHistory") }}
           </router-link>
         </nav>
         <div class="dc-auth">
           <template v-if="isLoggedIn && user">
             <span class="dc-username">{{ user.username }}</span>
-            <button class="dc-btn dc-btn--text" @click="logout()">
+            <button
+              class="dc-btn dc-btn--text"
+              @click="logout()"
+            >
               {{ t("Label-Logout") }}
             </button>
           </template>
           <template v-else>
-            <button class="dc-btn dc-btn--primary" @click="login()">
+            <button
+              class="dc-btn dc-btn--primary"
+              @click="login()"
+            >
               {{ t("Label-Login") }}
             </button>
           </template>
@@ -54,10 +76,18 @@ const { user, isLoggedIn, login, logout } = useAuth();
     <footer class="dc-footer">
       <div class="dc-footer-inner">
         <span>Powered by WikiLoop</span>
-        <a href="https://github.com/wikiloop/doublecheck" target="_blank" rel="noopener">
+        <a
+          href="https://github.com/wikiloop/doublecheck"
+          target="_blank"
+          rel="noopener"
+        >
           GitHub
         </a>
-        <a href="https://meta.wikimedia.org/wiki/WikiLoop" target="_blank" rel="noopener">
+        <a
+          href="https://meta.wikimedia.org/wiki/WikiLoop"
+          target="_blank"
+          rel="noopener"
+        >
           Meta-Wiki
         </a>
       </div>

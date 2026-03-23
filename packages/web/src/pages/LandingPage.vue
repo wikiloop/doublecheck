@@ -27,8 +27,10 @@ onMounted(() => {
         src="/wikiloop-doublecheck-logo.svg"
         alt="WikiLoop DoubleCheck"
         class="dc-hero__logo"
-      />
-      <h1 class="dc-hero__title">WikiLoop DoubleCheck</h1>
+      >
+      <h1 class="dc-hero__title">
+        WikiLoop DoubleCheck
+      </h1>
       <p class="dc-hero__subtitle">
         Community tool for reviewing Wikipedia edits using AI-assisted scoring
         and human judgement.
@@ -56,7 +58,9 @@ onMounted(() => {
     <!-- Features -->
     <section class="dc-features">
       <div class="dc-feature">
-        <div class="dc-feature__icon">&#128270;</div>
+        <div class="dc-feature__icon">
+          &#128270;
+        </div>
         <h3>AI-Assisted Review</h3>
         <p>
           LiftWing (ORES) scores highlight edits most likely to be damaging, so
@@ -64,7 +68,9 @@ onMounted(() => {
         </p>
       </div>
       <div class="dc-feature">
-        <div class="dc-feature__icon">&#128101;</div>
+        <div class="dc-feature__icon">
+          &#128101;
+        </div>
         <h3>Community Judgement</h3>
         <p>
           Multiple reviewers judge each edit. Consensus-driven decisions improve
@@ -72,7 +78,9 @@ onMounted(() => {
         </p>
       </div>
       <div class="dc-feature">
-        <div class="dc-feature__icon">&#9889;</div>
+        <div class="dc-feature__icon">
+          &#9889;
+        </div>
         <h3>Real-Time Feed</h3>
         <p>
           Live stream of recent edits with SSE updates. Never miss a potentially
@@ -80,7 +88,9 @@ onMounted(() => {
         </p>
       </div>
       <div class="dc-feature">
-        <div class="dc-feature__icon">&#127760;</div>
+        <div class="dc-feature__icon">
+          &#127760;
+        </div>
         <h3>Multi-Wiki Support</h3>
         <p>
           Review edits across dozens of Wikipedia language editions from one
@@ -93,10 +103,16 @@ onMounted(() => {
     <section class="dc-extensions">
       <h2>Additional Tools</h2>
       <div class="dc-extensions__links">
-        <a href="#" class="dc-extension-link">
+        <a
+          href="#"
+          class="dc-extension-link"
+        >
           Install UserScript
         </a>
-        <a href="#" class="dc-extension-link">
+        <a
+          href="#"
+          class="dc-extension-link"
+        >
           Chrome Extension
         </a>
       </div>
@@ -107,12 +123,15 @@ onMounted(() => {
       <h2>How It Works</h2>
       <div class="dc-preview__card">
         <p>
-          1. A Wikipedia edit appears with its AI risk score.<br />
+          1. A Wikipedia edit appears with its AI risk score.<br>
           2. You review the diff and judge: <strong>Should Revert</strong>,
-          <strong>Not Sure</strong>, or <strong>Looks Good</strong>.<br />
+          <strong>Not Sure</strong>, or <strong>Looks Good</strong>.<br>
           3. Community consensus drives quality across all Wikis.
         </p>
-        <router-link to="/review" class="dc-btn dc-btn--primary">
+        <router-link
+          to="/review"
+          class="dc-btn dc-btn--primary"
+        >
           Start Reviewing
         </router-link>
       </div>

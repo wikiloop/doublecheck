@@ -40,13 +40,6 @@ async function loadFeed(feedName?: string, cursor?: string) {
   }
 }
 
-function scoreBadgeColor(damaging?: number): string {
-  if (damaging === undefined) return "#72777d";
-  if (damaging >= 0.7) return "#d33";
-  if (damaging >= 0.4) return "#fc3";
-  return "#14866d";
-}
-
 function goToReview(item: Revision) {
   router.push(`/review/${item.wiki}/${item.revId}`);
 }
@@ -63,26 +56,45 @@ watch(selectedWiki, () => {
 
 <template>
   <div class="dc-feed-page">
-    <meta name="robots" content="noindex" />
+    <meta
+      name="robots"
+      content="noindex"
+    >
 
     <div class="dc-feed-page__header">
       <h1>{{ t("Label-Feed") }}</h1>
-      <select v-model="selectedWiki" class="dc-select">
-        <option v-for="wiki in wikis" :key="wiki" :value="wiki">
+      <select
+        v-model="selectedWiki"
+        class="dc-select"
+      >
+        <option
+          v-for="wiki in wikis"
+          :key="wiki"
+          :value="wiki"
+        >
           {{ wiki }}
         </option>
       </select>
     </div>
 
-    <div v-if="loading && items.length === 0" class="dc-feed-page__loading">
+    <div
+      v-if="loading && items.length === 0"
+      class="dc-feed-page__loading"
+    >
       {{ t("Label-Loading") }}...
     </div>
 
-    <div v-else-if="items.length === 0" class="dc-feed-page__empty">
+    <div
+      v-else-if="items.length === 0"
+      class="dc-feed-page__empty"
+    >
       No revisions in this feed yet.
     </div>
 
-    <ul v-else class="dc-feed-list">
+    <ul
+      v-else
+      class="dc-feed-list"
+    >
       <li
         v-for="item in items"
         :key="`${item.wiki}:${item.revId}`"
@@ -99,7 +111,10 @@ watch(selectedWiki, () => {
       </li>
     </ul>
 
-    <div v-if="nextCursor" class="dc-feed-page__more">
+    <div
+      v-if="nextCursor"
+      class="dc-feed-page__more"
+    >
       <button
         class="dc-btn dc-btn--secondary"
         :disabled="loading"

@@ -7,10 +7,8 @@ const events = new Hono();
 /** GET /api/events — SSE endpoint */
 events.get("/", (c) => {
   return streamSSE(c, async (stream) => {
-    const lastEventId = parseInt(
-      c.req.header("Last-Event-ID") ?? "0",
-      10,
-    );
+    // TODO: use Last-Event-ID for replay support
+    void c.req.header("Last-Event-ID");
 
     // Heartbeat interval
     const heartbeat = setInterval(async () => {

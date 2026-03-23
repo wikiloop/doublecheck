@@ -1,5 +1,4 @@
-/// <reference path="./types/mediawiki.d.ts" />
-
+// Type declarations for mediawiki are included via tsconfig
 import { initI18n } from "./i18n.js";
 
 // Inline CSS at build time
