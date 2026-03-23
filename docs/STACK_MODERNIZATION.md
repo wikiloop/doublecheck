@@ -3,7 +3,7 @@
 ## Motivation
 
 1. **Architecture is outdated** — Original stack (2018) built on Nuxt 2, Vue 2, Node 12, all EOL or unmaintained
-2. **Platform migration** — Move to Wikimedia Toolforge (Buildpacks) for native Wikimedia IP range, better community support, and free infrastructure (MariaDB, OAuth)
+2. **Platform migration** — Move to Wikimedia Toolforge (Buildpacks) for native Wikimedia IP range, better community support, and free infrastructure (OAuth, replicas)
 3. **Multi-surface delivery** — Serve three client forms from a single codebase:
    - Web SPA
    - Wikipedia UserScript (injected into Wikipedia pages)
@@ -20,8 +20,8 @@
 | State management | Vuex | **Pinia** or Vue 3 composables |
 | Build tool | Webpack (via Nuxt) | **Vite** |
 | Backend framework | Express | **Hono** |
-| Database | MongoDB (Atlas) | **MariaDB** (Toolforge ToolsDB) |
-| ORM | Mongoose | **Drizzle ORM** |
+| Database | MongoDB (Atlas) | **MongoDB** (Atlas — keep existing) |
+| ODM | Mongoose | **Mongoose** (or native driver) |
 | Auth | OAuth 1.0a + Passport | **OAuth 2.0** (MediaWiki native) |
 | Real-time | Socket.IO | **SSE** or short polling |
 | ML scoring | ORES | **Lift Wing** (ORES replacement) |
@@ -59,8 +59,8 @@
               ┌───────────┼───────────┐
               ▼           ▼           ▼
         ┌──────────┐ ┌─────────┐ ┌──────────┐
-        │ ToolsDB  │ │MediaWiki│ │ Lift Wing│
-        │ MariaDB  │ │  API    │ │  ML API  │
+        │ MongoDB  │ │MediaWiki│ │ Lift Wing│
+        │ Atlas    │ │  API    │ │  ML API  │
         └──────────┘ └─────────┘ └──────────┘
 ```
 
@@ -74,7 +74,7 @@ packages/
   web/            # SPA entry — Vite, vue-router, landing page
   userscript/     # IIFE bundle entry — injects into Wikipedia DOM
   extension/      # Chrome Extension (Manifest V3) — CRXJS Vite plugin
-  server/         # Hono API server + Drizzle + cron jobs
+  server/         # Hono API server + Mongoose + cron jobs
 ```
 
 All three clients import from `@doublecheck/core`. Vite builds each with a different entry point and output format.
@@ -98,15 +98,13 @@ All three clients import from `@doublecheck/core`. Vite builds each with a diffe
 | | diff2html | 3.x | Diff rendering (carried over) |
 | Backend | hono | 4.x | API framework |
 | | @hono/node-server | 1.x | Node adapter |
-| Database | drizzle-orm | 0.x | Type-safe SQL builder |
-| | mysql2 | 3.x | MariaDB driver |
-| | drizzle-kit | 0.x | Migration tooling |
+| Database | mongoose | 8.x | MongoDB ODM (keep existing) |
+| | mongodb | 6.x | Native driver (used by Mongoose) |
 | Testing | vitest | 3.x | Vite-native test runner |
 | | @testing-library/vue | 8.x | Component testing |
 | | @playwright/test | 1.x | E2E testing |
 | Code quality | eslint | 9.x | Flat config |
 | | prettier | 3.x | |
-| Migration | mongodb | 6.x | One-time migration script only |
 
 > **Note:** Version numbers are major-version guidance for initial development. We will update dependencies over time as new versions are released.
 
@@ -285,41 +283,28 @@ The current project has an existing `i18n/` directory with translation strings. 
 
 ---
 
-## Database Migration (MongoDB → MariaDB)
+## Database Strategy (MongoDB Atlas — keep existing)
 
-This is a clean-break migration — the old MongoDB database will not be kept running alongside the new MariaDB instance.
+Stay on MongoDB Atlas. The document model fits the app's data patterns (interactions, judgements, revisions) and avoids a costly migration of 321K+ interactions. Indexes on `userId` and `revisionId` cover the primary query patterns.
 
-### Schema Design
+### Wikimedia Replica Access
 
-- Decompose `wikiRevId` ("enwiki:987654") into `wiki VARCHAR` + `rev_id INT` columns
-- Main tables: `interactions`, `feed_revisions`, `decision_logs`, `users`
-- ORM: Drizzle schema definitions generate SQL migrations via `drizzle-kit`
+Toolforge provides read-only access to live Wikipedia replica databases (e.g., `enwiki_p`) for enrichment queries (article metadata, edit counts). These are MariaDB on separate hosts — accessed via direct MySQL queries, not through the app's MongoDB connection.
 
-### Multi-Host Database Access (Toolforge)
+### Space Management
 
-Toolforge's ToolsDB and the Wikimedia replica databases (e.g., `enwiki_p`) reside on **different hosts/sockets**. The Drizzle configuration must account for this:
+MongoDB Atlas free tier is 512MB. To stay within limits, run a periodic purge cron job (carried over from v4):
 
-- **ToolsDB connection** (`tools.db.svc.wikimedia.cloud`): used for all application data (interactions, users, etc.)
-- **Replica connections** (`enwiki.analytics.db.svc.wikimedia.cloud`, etc.): read-only access to live Wikipedia data for enrichment queries (e.g., fetching article metadata, edit counts)
-- Maintain separate Drizzle client instances per host — do not attempt cross-database JOINs across different hosts in a single query
-- Replica access is read-only; never write to replica databases
+- **Keep:** `Interaction` (core data — judgements), `UserPreferences`
+- **Purge periodically:** `FeedRevision`, `FeedPage`, `Sockets`, `Sessions`, `LiveClients`, `DecisionLog` (transient/cache data)
+- Schedule: daily at 3am UTC via Toolforge cron or in-app `node-cron`
+- Report purge results to Slack webhook (optional, same as v4)
 
-### Migration Script
+### Future Migration
 
-A one-time Node.js migration script (`packages/server/scripts/migrate-mongo-to-mariadb.ts`) will:
-
-1. Connect to old MongoDB (Atlas) in read-only mode
-2. Export each collection, transform documents to relational rows (decompose `wikiRevId`, flatten nested objects, map ObjectIds to auto-increment IDs)
-3. Batch-insert into MariaDB via Drizzle (or `LOAD DATA INFILE` for large tables)
-4. Run validation queries: compare row counts, spot-check random records, verify referential integrity
-
-### Migration Sequence
-
-1. Freeze writes to old app (put in read-only / maintenance mode)
-2. Run migration script
-3. Verify data integrity
-4. Deploy new stack pointing to MariaDB
-5. Decommission old MongoDB instance after a holding period (30 days recommended)
+If the app outgrows Atlas free tier, migrate to either:
+- MongoDB self-hosted on Cloud VPS
+- MariaDB on ToolsDB (would require schema redesign)
 
 ---
 
@@ -386,7 +371,7 @@ These files represent community effort, branding, or historical context that can
 |-----------|----------|
 | `i18n/locales/*.yml` | `af`, `ar`, `bg`, `ca`, `cs`, `de`, `en`, `es`, `fa`, `fr`, `he`, `id`, `it`, `ja`, `ko`, `lv`, `nl`, `pl`, `pt`, `ru`, `sv`, `th`, `tr`, `uk`, `zh` |
 
-**Test fixtures** — real MediaWiki API responses, useful as reference for the new API client and migration script:
+**Test fixtures** — real MediaWiki API responses, useful as reference for the new API client:
 
 | Directory | Contents |
 |-----------|----------|
@@ -545,7 +530,7 @@ All runtime secrets live on **Toolforge** (the tool account's environment), not 
 
 - `TOOLSDB_*` — already at `~/replica.my.cnf` on Toolforge
 - `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET` — set in the tool account's `.env`
-- `MONGO_URI` — temporary, for migration script run from Toolforge
+- `MONGO_URI` — MongoDB Atlas connection string for the application
 
 GitHub Actions secrets are only added later if CI jobs need them (e.g., integration tests, automated CWS publishing). Decide this in Phase 1 when the CI pipeline is designed.
 
@@ -614,9 +599,9 @@ Must complete before parallel work begins. One agent scaffolds the entire monore
 #### Monorepo Scaffolding
 
 - pnpm workspace, TypeScript config, ESLint flat config, Prettier
-- `docker-compose.yml` for local dev (MariaDB + MediaWiki containers)
+- `docker-compose.yml` for local dev (MongoDB + MediaWiki containers)
 - `.env.example` listing every required variable with descriptions
-- CI pipeline (GitHub Actions): lint, type-check, unit tests per package, MariaDB service container, Playwright browsers
+- CI pipeline (GitHub Actions): lint, type-check, unit tests per package, MongoDB service container, Playwright browsers
 
 #### Interface Contracts
 
@@ -627,7 +612,7 @@ These are the boundaries between packages. Defined as TypeScript types/interface
 | **API schema** | `packages/core/src/types/api.ts` | REST endpoint paths, request/response shapes for every route (judgement CRUD, revision feed, Lift Wing proxy, auth, SSE event types) | server, core API client, all three clients |
 | **Domain types** | `packages/core/src/types/models.ts` | `Revision`, `Judgement`, `User`, `Feed`, `LiftWingScore`, `WikiIdentity` (named / temp / anon) | all packages |
 | **Component props & events** | `packages/core/src/types/components.ts` | Props interfaces and emitted event payloads for `RevisionCard`, `DiffBox`, `ActionPanel`, `JudgementPanel` | core, web, userscript, extension |
-| **Drizzle schema** | `packages/server/src/db/schema.ts` | Table definitions — the single source of truth for database shape | server, migration script |
+| **Mongoose models** | `packages/server/src/db/models/` | Collection schemas — the single source of truth for database shape | server |
 | **i18n message keys** | `packages/core/i18n/en.json` | Canonical set of translation keys and English strings | all client packages |
 
 > **Rule:** If a subagent needs to change a shared contract, it must update the type file in `packages/core` (or `server/db/schema.ts`) and all subagents must pull the change before continuing.
@@ -635,8 +620,8 @@ These are the boundaries between packages. Defined as TypeScript types/interface
 #### Exit Criteria
 
 - All subagents can `pnpm install`, import shared types, and run `pnpm test` with no errors
-- `docker compose up` starts MariaDB + MediaWiki locally
-- `drizzle-kit migrate` runs against local MariaDB successfully
+- `docker compose up` starts MongoDB + MediaWiki locally
+- Mongoose models connect to local MongoDB successfully
 
 ### Phase 2 — Parallel Build (6 subagents)
 
@@ -668,8 +653,8 @@ Server Core  Web SPA   UserScript   Extension      Migration
 - SSE endpoint with heartbeat + event IDs
 - CORS middleware (Wikipedia origins + extension origin)
 - Rate limiting, `/healthz` health check, structured logging (pino)
-- **Tests:** all server unit tests, integration tests against MariaDB Docker
-- **Dependencies on Phase 1:** Drizzle schema, API type definitions, `.env.example`
+- **Tests:** all server unit tests, integration tests against MongoDB Docker
+- **Dependencies on Phase 1:** Mongoose models, API type definitions, `.env.example`
 - **No dependency on other subagents** — can validate with `curl` / Vitest against the API schema
 
 #### Subagent B — `packages/core`
@@ -716,36 +701,26 @@ Server Core  Web SPA   UserScript   Extension      Migration
 - **Depends on Subagent B** (`@doublecheck/core` components)
 - **Can start immediately** on Manifest V3 scaffolding, service worker, and `chrome.identity` flow while B builds components
 
-#### Subagent F — Migration Script
+#### Subagent F — Purge Cron Job
 
-- `packages/server/scripts/migrate-mongo-to-mariadb.ts`
-- MongoDB read → transform → MariaDB batch insert
-- Validation queries (row counts, spot checks, referential integrity)
-- **Tests:** integration test against MongoDB fixture + MariaDB Docker
-- **Dependencies on Phase 1:** Drizzle schema only
-- **No dependency on other subagents** — runs independently against database containers
-- **Requires:** MongoDB Atlas read-only credentials (temporary)
+- `packages/server/src/cron/purge.ts`
+- Purge transient collections (FeedRevision, FeedPage, Sockets, Sessions, LiveClients, DecisionLog)
+- Preserve core data (Interaction, UserPreferences)
+- Optional Slack webhook reporting
+- **Tests:** unit test verifying correct collections are purged
+- **Dependencies on Phase 1:** Mongoose models only
+- **Requires:** MongoDB Atlas credentials
 
 ### Phase 3 — Integration & Launch (sequential)
 
 After all subagents complete:
 
 1. **Integration testing**: wire all packages together; run full E2E suite against a staging Toolforge deployment
-2. **Run migration script** against production MongoDB → production MariaDB
-3. **Deploy to Toolforge Buildpacks** (run `drizzle-kit migrate` as `prestart` or one-off job first)
-4. **Submit Chrome Extension** to Chrome Web Store
-5. **Publish UserScript** installation instructions to Meta-Wiki
-6. **Shut down old Heroku app**
-7. **Decommission MongoDB Atlas** after 30-day holding period
-
-### Deployment: Schema Migrations
-
-Drizzle migrations must run **before** the new application code starts serving traffic. On Toolforge:
-
-- Run `drizzle-kit migrate` as a **one-off Toolforge job** (`toolforge jobs run migrate -- node scripts/migrate.js`) prior to deploying the new build
-- Alternatively, include the migration as a `prestart` script in `package.json` — Buildpacks execute this before the main process starts
-- Migrations must be idempotent (safe to re-run) to handle deployment retries
-- For breaking schema changes, coordinate migration + deploy as a pair: run migration, then immediately deploy the matching code
+2. **Deploy to Toolforge Buildpacks**
+3. **Submit Chrome Extension** to Chrome Web Store
+4. **Publish UserScript** installation instructions to Meta-Wiki
+5. **Shut down old Heroku app**
+6. **Set up purge cron job** on Toolforge to keep MongoDB Atlas within free tier limits
 
 ---
 
@@ -780,7 +755,7 @@ Mock database layer, test API route logic.
 - **CORS middleware**: allows requests from `*.wikipedia.org` origins; allows `chrome-extension://` origin; rejects unlisted origins; caches preflight responses
 - **SSE endpoint**: sends `:ping` heartbeat every 15s; streams new judgement events; includes `id` field for `Last-Event-ID` resume
 - **Rate limiting**: throttles excessive requests per IP/user; returns 429 with `Retry-After` header
-- **Health check**: `GET /healthz` returns 200 when MariaDB is connected; returns 503 when connection is lost
+- **Health check**: `GET /healthz` returns 200 when MongoDB is connected; returns 503 when connection is lost
 
 #### `packages/userscript` — UserScript-Specific Tests
 
@@ -798,10 +773,9 @@ Mock database layer, test API route logic.
 
 Run against real services (Docker in CI).
 
-- **Drizzle queries against MariaDB**: CRUD operations on all tables; migration up/down idempotency; verify foreign key constraints
-- **API contract tests**: full request/response cycle through Hono handlers against real MariaDB — submit judgement, fetch feed, verify stored data matches
-- **Database migration script**: run `migrate-mongo-to-mariadb.ts` against a MongoDB fixture dump; verify row counts match document counts; spot-check `wikiRevId` decomposition into `wiki` + `rev_id`; verify referential integrity across tables
-- **Multi-host database access**: connect to ToolsDB and replica hosts separately; verify read-only enforcement on replica connections
+- **Mongoose queries against MongoDB**: CRUD operations on all collections; verify indexes are created
+- **API contract tests**: full request/response cycle through Hono handlers against real MongoDB — submit judgement, fetch feed, verify stored data matches
+- **Purge cron job**: verify transient collections are purged correctly while preserving interactions and user data
 
 ### E2E Tests (Playwright)
 
@@ -838,7 +812,7 @@ Playwright with `--load-extension` flag.
 
 - Lint + type-check (all packages, fast)
 - Unit tests (all packages, parallel)
-- Integration tests (server, requires MariaDB service container)
+- Integration tests (server, requires MongoDB service container)
 - E2E tests (web + userscript + extension, requires browser install step)
 - Run on: push to main, all PRs
 
@@ -892,7 +866,7 @@ The API server at `doublecheck.toolforge.org` must handle cross-origin requests 
 
 ### Health Check
 
-- `GET /healthz` endpoint: returns 200 if MariaDB connection is alive
+- `GET /healthz` endpoint: returns 200 if MongoDB connection is alive
 - Used by Toolforge Buildpacks for liveness/readiness probes
 
 ---
@@ -930,8 +904,7 @@ The landing page (`/`) is a static HTML page served by the Hono API server (or a
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Vue 3 over Preact | Vue 3 | Web SPA and Extension bundle their own Vue 3; UserScript reuses Wikipedia's Vue 3 via ResourceLoader (cached, zero extra bytes) with fallback to self-hosted bundle; all three surfaces share Codex components |
-| MariaDB over Postgres | MariaDB | Toolforge provides ToolsDB (MariaDB) for free; can JOIN Wikimedia replica databases |
-| Drizzle over Prisma | Drizzle | No Rust binary dependency; lightweight; SQL-first fits simple query needs |
+| Keep MongoDB over MariaDB migration | MongoDB | Avoids costly migration of 321K+ interactions; document model fits app's data patterns; Atlas free tier sufficient with purge cron |
 | Hono over Express | Hono | Lighter, TypeScript-first; backend is pure API server (no SSR) |
 | SSE over Socket.IO | SSE | Simpler on Toolforge; real-time needs are modest (one-way push) |
 | Codex over custom CSS | Codex | Native Wikipedia look-and-feel; accessibility and RTL support included |
