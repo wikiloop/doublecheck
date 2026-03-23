@@ -1,0 +1,23 @@
+/*
+ * WikiLoop DoubleCheck content script styles.
+ * All classes are prefixed with .dc- to avoid conflicts with Wikipedia styles.
+ * Most panel styles live in the shadow DOM (inject-panel.ts).
+ * This file covers non-shadow-DOM elements.
+ */
+
+/* Host container for the review panel (sits in the normal DOM) */
+#dc-review-panel-root {
+  display: block;
+  margin: 16px 0;
+}
+
+/* Risk badges on RC/Watchlist (injected into the page DOM) */
+.dc-risk-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}

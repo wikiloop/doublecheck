@@ -2,7 +2,12 @@
   "manifest_version": 3,
   "name": "WikiLoop DoubleCheck",
   "version": "5.0.0",
-  "description": "Community tool for reviewing recent Wikipedia edits for vandalism and quality issues",
+  "description": "Crowdsourced vandalism review for Wikipedia",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "https://*.wikipedia.org/*",
+    "https://wikiloop-doublecheck.toolforge.org/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -16,8 +21,20 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "permissions": [],
-  "host_permissions": [
-    "https://wikiloop-doublecheck.toolforge.org/*"
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.wikipedia.org/w/index.php?*diff=*",
+        "https://*.wikipedia.org/wiki/Special:Diff/*",
+        "https://*.wikipedia.org/wiki/Special:RecentChanges*",
+        "https://*.wikipedia.org/wiki/Special:Watchlist*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
   ]
 }
