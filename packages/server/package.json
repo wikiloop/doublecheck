@@ -10,16 +10,19 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:integration": "vitest run --passWithNoTests --dir src/__tests__/integration",
-    "validate:phase0": "tsx scripts/validate-phase0.ts"
+    "validate:phase0": "tsx scripts/validate-phase0.ts",
+    "purge": "tsx src/cron/cli.ts"
   },
   "dependencies": {
     "@doublecheck/core": "workspace:*",
     "@hono/node-server": "^1.0.0",
     "hono": "^4.0.0",
-    "mongoose": "^8.0.0"
+    "mongoose": "^8.0.0",
+    "node-cron": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/node-cron": "^3.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "vitest": "^3.0.0"
