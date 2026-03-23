@@ -2,6 +2,7 @@
   "name": "wikiloop-doublecheck",
   "version": "5.0.0-alpha.0",
   "private": true,
+  "packageManager": "pnpm@10.31.0",
   "engines": {
     "node": "20"
   },
