@@ -126,8 +126,14 @@ All three clients import from `@doublecheck/core`. Vite builds each with a diffe
 ### Web SPA (packages/web)
 
 - Vite SPA build — **bundles its own Vue 3, Codex components, and Codex design tokens** (fully self-contained, no dependency on Wikipedia's runtime)
-- Served from `https://doublecheck.wikiloop.org`
-- Landing page: static HTML with SEO meta tags, links to "Start Reviewing"
+- **Dual-domain deployment:**
+  - `https://wikiloop-doublecheck.toolforge.org` — Toolforge Buildpacks (Wikimedia-hosted, API + SPA)
+  - `https://doublecheck.wikiloop.org` — Vercel (custom domain, landing page + SPA)
+- Toolforge cannot serve custom domains, so `wikiloop.org` is hosted on Vercel pointing to the same Toolforge API
+- **Landing page** (SEO, static HTML):
+  - Feature overview and example component previews
+  - Two call-to-action buttons: "Use it on toolforge.org (WMF hosted)" and "Use it on wikiloop.org"
+  - Links to install UserScript and Chrome Extension
 - Review pages: `<meta name="robots" content="noindex">`
 - OAuth 2.0 login flow
 - Routes: review, feed, leaderboard, history
