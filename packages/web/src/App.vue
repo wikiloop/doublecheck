@@ -1,19 +1,39 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { onMounted } from "vue";
+import AppLayout from "./layouts/AppLayout.vue";
+import { useAuth } from "./composables/useAuth";
 
-const status = ref<{ status: string; version: string } | null>(null);
+const { checkAuth } = useAuth();
 
-onMounted(async () => {
-  const res = await fetch("/api/health");
-  status.value = await res.json();
+onMounted(() => {
+  checkAuth();
 });
 </script>
 
 <template>
-  <main>
-    <h1>WikiLoop DoubleCheck</h1>
-    <p>Community tool for reviewing Wikipedia edits</p>
-    <p v-if="status">API: {{ status.status }} &middot; v{{ status.version }}</p>
-    <p v-else>Connecting to API...</p>
-  </main>
+  <AppLayout>
+    <router-view />
+  </AppLayout>
 </template>
+
+<style>
+/* Global reset and base styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: #202122;
+  background: #f8f9fa;
+  line-height: 1.5;
+}
+
+a {
+  color: #3366cc;
+}
+</style>

@@ -7,4 +7,8 @@ export default defineConfig({
     outDir: "../../dist/web",
     emptyOutDir: true,
   },
+  test: {
+    environment: "happy-dom",
+    globals: true,
+  },
 });
