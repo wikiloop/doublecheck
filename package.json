@@ -1,0 +1,13 @@
+{
+  "name": "wikiloop-doublecheck",
+  "version": "5.0.0-alpha.0",
+  "private": true,
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @doublecheck/server dev",
+    "build": "pnpm --filter @doublecheck/web build && pnpm --filter @doublecheck/server build",
+    "start": "pnpm --filter @doublecheck/server start"
+  }
+}

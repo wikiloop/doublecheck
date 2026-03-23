@@ -117,10 +117,11 @@ All three clients import from `@doublecheck/core`. Vite builds each with a diffe
 ### Shared (packages/core)
 
 - Vue 3 components: RevisionCard, DiffBox, ActionPanel, JudgementPanel
-- Composables: `useRevision()`, `useJudgement()`, `useLiftWing()`
+- Composables: `useRevision()`, `useJudgement()`, `useLiftWing()`, `useWatchlist()`
 - Typed API client (plain `fetch` wrapper)
 - Type definitions: Revision, Judgement, Feed, etc.
 - i18n: shared translation JSON files (`i18n/{locale}.json`) consumed via `vue-i18n`
+- Watchlist prioritization: logged-in users see edits to their watched pages first in the review feed
 
 ### Web SPA (packages/web)
 
@@ -516,8 +517,8 @@ These are things **only you** can do — provisioning accounts, registering with
 
 | Step | Action | Smoke test |
 |------|--------|------------|
-| 1 | Register an OAuth 2.0 consumer at `meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration` | Consumer approved, `client_id` + `client_secret` received |
-| 2 | Set callback URLs: `https://doublecheck.toolforge.org/auth/callback`, `https://doublecheck.wikiloop.org/auth/callback` | — |
+| 1 | Register an OAuth 2.0 consumer at `meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose/oauth2` with grants: Basic rights, Edit existing pages, Rollback, Patrol, View your watchlist | Consumer approved, `client_id` + `client_secret` received |
+| 2 | Set callback URL: `http://localhost:3000/auth/callback` (dev); register a second consumer for production (`https://wikiloop-doublecheck.toolforge.org/auth/callback`) when ready to deploy | — |
 | 3 | Test the token exchange manually | `curl -X POST https://meta.wikimedia.org/w/rest.php/oauth2/access_token -d 'grant_type=authorization_code&...'` returns an access token |
 
 #### MongoDB Atlas (migration only)
@@ -532,13 +533,15 @@ These are things **only you** can do — provisioning accounts, registering with
 |------|--------|------------|
 | 1 | Register a Chrome Web Store developer account ($5 fee) | Dashboard accessible at `chrome.google.com/webstore/devconsole` |
 
-#### GitHub Secrets
+#### Secrets Strategy
 
-After the above are provisioned, add these to the repo's GitHub Actions secrets:
+All runtime secrets live on **Toolforge** (the tool account's environment), not in GitHub:
 
-- `TOOLSDB_HOST`, `TOOLSDB_USER`, `TOOLSDB_PASSWORD`
-- `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`
-- `MONGO_URI` (temporary, for migration only)
+- `TOOLSDB_*` — already at `~/replica.my.cnf` on Toolforge
+- `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET` — set in the tool account's `.env`
+- `MONGO_URI` — temporary, for migration script run from Toolforge
+
+GitHub Actions secrets are only added later if CI jobs need them (e.g., integration tests, automated CWS publishing). Decide this in Phase 1 when the CI pipeline is designed.
 
 #### Phase 0 Validation Script
 
@@ -572,16 +575,11 @@ MongoDB Atlas
 Chrome Web Store
   [✓] Developer account registered ................. (manual confirmation)
 
-GitHub Actions Secrets
-  [✓] TOOLSDB_HOST is set .......................... ok
-  [✓] TOOLSDB_USER is set .......................... ok
-  [✓] TOOLSDB_PASSWORD is set ...................... ok
-  [✓] OAUTH_CLIENT_ID is set ....................... ok
-  [✓] OAUTH_CLIENT_SECRET is set ................... ok
-  [✓] MONGO_URI is set ............................. ok
+CWS Service Account
+  [✓] Key file exists .............................. ok
 
 ==================
-Result: 18/18 passed, 0 failed
+Result: 13/13 passed, 0 failed
 Phase 0 is COMPLETE — ready for Phase 1.
 ```
 
@@ -597,7 +595,7 @@ The script validates:
 | Token exchange | OAuth consumer is approved and callback URLs are correct | Consumer pending approval, or wrong callback URL |
 | Token → userinfo | Full OAuth round-trip works; token has correct scopes | Insufficient scopes on the consumer registration |
 | MongoDB connection + counts | Atlas credentials work, data is readable | Wrong URI, IP allowlist blocking, or user lacks read access |
-| GitHub secrets set | CI pipeline will have access to all credentials | Secret not added to repo settings |
+| CWS service account key | Automated extension publishing is possible | Key file missing or service account not added to CWS dashboard |
 
 **Phase 0 is done when the validation script reports all checks passed.** The Chrome Web Store check is manual (the script prompts for confirmation) since there's no API to verify account registration.
 

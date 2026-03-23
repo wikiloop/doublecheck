@@ -104,4 +104,8 @@ reports
 !.yarn/releases
 !.yarn/plugins
 !.yarn/sdks
-!.yarn/versions
+!.yarn/versions.credentials/
+.credentials/
+.env.local
+.env.wikiloop
+.env.toolforge
