@@ -19,6 +19,12 @@ import { strict as assert } from 'assert';
 import { wikiToDomain } from '@/shared/utility-shared';
 import Bottleneck from 'bottleneck';
 
+const MW_USER_AGENT = process.env.USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
+const MW_HEADERS = {
+  'Content-Type': 'application/json; charset=UTF-8',
+  'User-Agent': MW_USER_AGENT,
+};
+
 /**
  * An interface for the page info when fetching from MediaWiki Action API.
 
@@ -182,7 +188,8 @@ export class MwActionApiClient2 {
     const result = await this.bottleneck.schedule(
       async () =>
         await this.axios.get(MwActionApiClient2.endPoint(wiki), {
-          params: MwActionApiClient2.infoParams(revId)
+          params: MwActionApiClient2.infoParams(revId),
+          headers: MW_HEADERS,
         })
     );
     return MwActionApiClient2.extractRevisionInfo(wiki, result);
@@ -213,6 +220,7 @@ export class MwActionApiClient2 {
     const ret = await this.axios.get(MwActionApiClient2.endPoint(wiki), {
       params: MwActionApiClient2.diffParams(revId, prevRevId),
       withCredentials: false,
+      headers: MW_HEADERS,
     });
     if (ret.data.error) {
       throw new Error(
@@ -234,7 +242,8 @@ export class MwActionApiClient2 {
 
   public async fetchParsedInfo(wiki: string, revId: number) {
     const ret = await this.axios.get(MwActionApiClient2.endPoint(wiki), {
-      params: MwActionApiClient2.parsedParams(revId)
+      params: MwActionApiClient2.parsedParams(revId),
+      headers: MW_HEADERS,
     });
     if (ret.data.error) {
       throw new Error(ret.data.error.info);

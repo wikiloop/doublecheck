@@ -15,6 +15,8 @@
 import { wikiToDomain } from '@/shared/utility-shared';
 const rp = require('request-promise');
 
+const MW_USER_AGENT = process.env.USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
+
 const chalk = require('chalk');
 
 const Logger = require('heroku-logger').Logger;
@@ -127,7 +129,7 @@ export async function fetchRevisions(wikiRevIds) {
       fetchUrl.searchParams.set(key, params[key]);
     });
     try {
-      const retJson = await rp.get(fetchUrl, { json: true });
+      const retJson = await rp.get(fetchUrl, { json: true, headers: { 'User-Agent': MW_USER_AGENT } });
       if (retJson.query.badrevids) {
         wikiToRevisionList[wiki] = []; // does not find
       } else {

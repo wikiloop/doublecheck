@@ -19,6 +19,8 @@ import { wikiToDomain } from '@/shared/utility-shared';
 import { perfLogger, apiLogger, asyncHandler } from '@/server/common';
 const rp = require('request-promise');
 
+const MW_USER_AGENT = process.env.USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
+
 export const latestRouter = require('express').Router();
 
 /**
@@ -49,7 +51,7 @@ const latestRevs = async (req, res) => {
 
   apiLogger.info(`Request for Action API: ${url.toString()}`);
 
-  const recentChangesJson = await rp.get(url.toString(), { json: true });
+  const recentChangesJson = await rp.get(url.toString(), { json: true, headers: { 'User-Agent': MW_USER_AGENT } });
   const recentChangeResponseTime = new Date();
   /** Sample response
    {

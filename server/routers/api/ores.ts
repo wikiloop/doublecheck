@@ -18,6 +18,8 @@
 import { computeOresFieldNew, wikiRevIdsGroupByWiki, apiLogger, asyncHandler } from '../../common';
 const rp = require('request-promise');
 
+const MW_USER_AGENT = process.env.USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
+
 export const oresRouter = require('express').Router();
 
 /** Function to fetch ORES, if unavailable, cover the error and replace score with null
@@ -42,7 +44,7 @@ async function fetchOres(wikiRevIds) {
     const revIds = wikiToRevIdList[wiki];
     const oresUrl = `https://ores.wikimedia.org/v3/scores/${wiki}/?models=damaging|goodfaith&revids=${revIds.join('|')}`;
     try {
-      oresResultJson = await rp.get(oresUrl, { json: true });
+      oresResultJson = await rp.get(oresUrl, { json: true, headers: { 'User-Agent': MW_USER_AGENT } });
       oresResults[wiki] = revIds.map((revId) => computeOresFieldNew(oresResultJson, wiki, revId));
     } catch (err) {
       if (err.statusCode === 429) {

@@ -20,6 +20,7 @@ import { wikiToDomain } from '../../../shared/utility-shared';
 
 const rp = require('request-promise');
 
+const MW_USER_AGENT = process.env.USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
 const MW_LINK_PARSE_API_TIMEOUT_MS = 5000; // TODO: Relax the timeout after this logic has been moved to client-side lazy loading.
 
 export const diffRouter = require('express').Router();
@@ -29,8 +30,8 @@ const fetchDiffMeta = async (wiki, fromRevId, toRevId) => {
     logger.info(`Start requesting link parsing, with timeout = ${MW_LINK_PARSE_API_TIMEOUT_MS}`);
     const fromDiffApiUrl = `https://${wikiToDomain[wiki]}/w/api.php?action=parse&format=json&prop=links|images|iwlinks&oldid=${fromRevId}`;
     const toDiffApiUrl = `https://${wikiToDomain[wiki]}/w/api.php?action=parse&format=json&prop=links|images|iwlinks&oldid=${toRevId}`;
-    const fromDiffJson = await rp.get(fromDiffApiUrl, { json: true, timeout: MW_LINK_PARSE_API_TIMEOUT_MS });
-    const toDiffJson = await rp.get(toDiffApiUrl, { json: true, timeout: MW_LINK_PARSE_API_TIMEOUT_MS });
+    const fromDiffJson = await rp.get(fromDiffApiUrl, { json: true, timeout: MW_LINK_PARSE_API_TIMEOUT_MS, headers: { 'User-Agent': MW_USER_AGENT } });
+    const toDiffJson = await rp.get(toDiffApiUrl, { json: true, timeout: MW_LINK_PARSE_API_TIMEOUT_MS, headers: { 'User-Agent': MW_USER_AGENT } });
 
     const linkHashmap: any = {};
 
@@ -61,7 +62,7 @@ const diffWikiRevId = async (req, res) => {
   const wiki = wikiRevId.split(':')[0];
   const revId = wikiRevId.split(':')[1];
   const diffApiUrl = `https://${wikiToDomain[wiki]}/w/api.php?action=compare&fromrev=${revId}&torelative=prev&format=json`;
-  const diffJson = await rp.get(diffApiUrl, { json: true });
+  const diffJson = await rp.get(diffApiUrl, { json: true, headers: { 'User-Agent': MW_USER_AGENT } });
   console.assert(diffJson.compare.torevid, `Error parsing diffJson.compare.torevid, diffJson=${diffJson}`);
   const fromRevId = diffJson.compare.fromrevid;
   const toRevId = diffJson.compare.torevid;
@@ -83,7 +84,7 @@ diffRouter.get('/:wikiRevId', asyncHandler(diffWikiRevId));
 const diff = async (req, res) => {
   logger.debug('req.query', req.query);
   const diffApiUrl = `https://${wikiToDomain[req.query.wiki]}/w/api.php?action=compare&fromrev=${req.query.revId}&torelative=prev&format=json`;
-  const diffJson = await rp.get(diffApiUrl, { json: true });
+  const diffJson = await rp.get(diffApiUrl, { json: true, headers: { 'User-Agent': MW_USER_AGENT } });
   res.send(diffJson);
   req.visitor
       .event({ ec: 'api', ea: '/diff' })

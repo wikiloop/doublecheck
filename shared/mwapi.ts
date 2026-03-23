@@ -20,11 +20,11 @@ import * as _ from 'underscore';
 import update from 'immutability-helper';
 const axios = require('axios');
 const MAX_MWAPI_LIMIT:number = 50;
-const userAgent = process.env.USER_AGENT || 'WikiLoop DoubleCheck Dev';
+const userAgent = process.env.USER_AGENT || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0';
 const Bottleneck = require('bottleneck');
 const moreHeaders = {
-  // "Origin": "http://localhost:3000",
   'Content-Type': 'application/json; charset=UTF-8',
+  'User-Agent': userAgent,
 };
 
 /**
