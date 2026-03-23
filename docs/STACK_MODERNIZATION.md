@@ -167,7 +167,26 @@ if (/Special:(Diff|RecentChanges|Watchlist)|[?&]diff=/.test(location.href)) {
 }
 ```
 
-**Option B — Tampermonkey/Greasemonkey**: install directly from `https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js`
+**Option B — Tampermonkey / Greasemonkey** (install as a userscript manager script):
+
+```js
+// ==UserScript==
+// @name         WikiLoop DoubleCheck
+// @version      5.0.0
+// @description  Crowdsourced vandalism review for Wikipedia
+// @namespace    https://doublecheck.wikiloop.org
+// @match        *://*.wikipedia.org/w/index.php?*diff=*
+// @match        *://*.wikipedia.org/wiki/Special:Diff/*
+// @match        *://*.wikipedia.org/wiki/Special:RecentChanges*
+// @match        *://*.wikipedia.org/wiki/Special:Watchlist*
+// @grant        none
+// @license      MIT
+// ==/UserScript==
+
+mw.loader.using(['vue', '@wikimedia/codex', 'mediawiki.api']).then(function () {
+  mw.loader.getScript('https://wikiloop-doublecheck.toolforge.org/userscript.iife.js');
+});
+```
 
 In both cases, `mw.loader.using` ensures Vue 3 and Codex are loaded before the IIFE executes. The IIFE accesses them via `require('vue')` and `require('@wikimedia/codex')` from the ResourceLoader registry.
 
@@ -320,26 +339,258 @@ If the app outgrows Atlas free tier, migrate to either:
 
 This is a greenfield rewrite — the old Heroku app will be shut down and replaced, not incrementally migrated. Work is structured so that multiple subagents (developers or AI agents) can build packages **in parallel** after shared foundations are in place.
 
-### Phase -1 — Demolition ✅
+### Phase -1 — Demolition ✅ (clean slate on `v5` branch)
 
-Executed. Created `v5` branch from `master`, preserved branding, i18n (26 locales), test fixtures, changelog, and this plan. Deleted all Nuxt 2 / Vue 2 / Express code. See commit `ea4f9d0`.
+Create a `v5` branch from `master`, then remove all old application code. The v5 branch starts empty except for assets to carry forward and this plan document. Everything else is rebuilt from scratch.
+
+#### Branch Setup
+
+```bash
+git checkout master
+git checkout -b v5
+```
+
+#### Assets to Preserve (copy to `v5-assets/` before demolition)
+
+These files represent community effort, branding, or historical context that cannot be regenerated.
+
+**Branding & Icons** — needed for the new Web SPA, Extension, and UserScript panel header:
+
+| File | Purpose | Used by |
+|------|---------|---------|
+| `static/wikiloop-doublecheck-logo.svg` | Primary brand logo (vector) | Web SPA, Extension popup, landing page |
+| `static/wikiloop-doublecheck-logo.png` | Primary brand logo (raster) | OpenGraph image, Chrome Web Store listing |
+| `static/wikiloop-logo.svg` | Parent project logo (vector) | Landing page footer |
+| `static/wikiloop-logo.png` | Parent project logo (raster) | Fallback |
+| `static/favicon.ico` | Browser favicon | Web SPA |
+| `static/icon.png` | App icon | Extension, PWA manifest |
+
+**Translations (26 languages)** — significant community contribution, convert from YAML to JSON during Phase 2:
+
+| Directory | Contents |
+|-----------|----------|
+| `i18n/locales/*.yml` | `af`, `ar`, `bg`, `ca`, `cs`, `de`, `en`, `es`, `fa`, `fr`, `he`, `id`, `it`, `ja`, `ko`, `lv`, `nl`, `pl`, `pt`, `ru`, `sv`, `th`, `tr`, `uk`, `zh` |
+
+**Test fixtures** — real MediaWiki API responses, useful as reference for the new API client:
+
+| Directory | Contents |
+|-----------|----------|
+| `test/testdata/mwapi/small/*.json` | Sample MW API responses (enwiki, zhwiki, wikidatawiki) + datamap |
+| `test/testdata/mwapi/large/*.json` | Larger MW API response samples |
+| `test/testdata/wikitrust_feed.json` | WikiTrust scoring feed sample |
+
+**Project history & legal:**
+
+| File | Purpose |
+|------|---------|
+| `LICENSE` | Apache-2.0 — must remain in repo root |
+| `CHANGELOG.md` | Version history through v4 — keep for reference |
+| `.all-contributorsrc` | Contributor attribution metadata |
+
+**This plan:**
+
+| File | Purpose |
+|------|---------|
+| `docs/STACK_MODERNIZATION.md` | The v5 blueprint — the only document that drives implementation |
+
+#### What Gets Deleted (everything else)
+
+All old application code, config, and build artifacts. For reference, this includes:
+
+| Category | Paths |
+|----------|-------|
+| Nuxt 2 app | `pages/`, `layouts/`, `components/`, `store/`, `plugins/`, `middleware/`, `nuxt.config.js`, `custom.scss`, `vue-shim.d.ts` |
+| Express server | `server/`, `cronjobs/`, `mailer/`, `tscmd/`, `cross-edits-detection/` |
+| Old shared code | `shared/` |
+| Old build/config | `package.json`, `yarn.lock`, `.yarnrc`, `.nvmrc`, `.babelrc`, `.eslintrc.yml`, `tsconfig.json`, `jest*.config.js`, `jest.setup.js`, `typedoc.json`, `commitlint.config.js`, `eco.yml`, `renovate.json` |
+| Old deployment | `Procfile`, `app.json`, `heroku.env`, `template.env`, `.circleci/` |
+| Old CI/GitHub | `.github/config.yml`, `.github/weekly-digest.yml` |
+| Generated/cached | `.nuxt/`, `node_modules/`, `package-lock.json`, `tmp/` |
+| Old scripts | `scripts/` |
+| Old test infra | `test/` (fixtures already copied to `v5-assets/`) |
+| Old assets dir | `assets/` (demo GIFs and legacy icons — not needed for v5) |
+| Old static dir | `static/` (logos already copied to `v5-assets/`) |
+| Old docs | `docs/` (TypeDoc output — will be regenerated), `README.md`, `ARCHITECT.md`, `CONTRIBUTING.md` |
+| Claude config | `.agents/`, `.claude/`, `skills-lock.json` |
+| VS Code | `.vscode/` |
+
+#### Demolition Script
+
+```bash
+# 1. Create v5 branch
+git checkout master && git checkout -b v5
+
+# 2. Copy assets to preserve
+mkdir -p v5-assets/branding v5-assets/i18n v5-assets/test-fixtures v5-assets/history
+
+cp static/wikiloop-doublecheck-logo.svg v5-assets/branding/
+cp static/wikiloop-doublecheck-logo.png v5-assets/branding/
+cp static/wikiloop-logo.svg v5-assets/branding/
+cp static/wikiloop-logo.png v5-assets/branding/
+cp static/favicon.ico v5-assets/branding/
+cp static/icon.png v5-assets/branding/
+
+cp -r i18n/locales/ v5-assets/i18n/
+cp -r test/testdata/ v5-assets/test-fixtures/
+
+cp CHANGELOG.md v5-assets/history/
+cp .all-contributorsrc v5-assets/history/
+
+# 3. Remove everything except what we keep
+#    (LICENSE, docs/STACK_MODERNIZATION.md, v5-assets/, .git/, .gitignore)
+find . -maxdepth 1 \
+  ! -name '.' ! -name '.git' ! -name '.gitignore' \
+  ! -name 'LICENSE' ! -name 'v5-assets' ! -name 'docs' \
+  -exec rm -rf {} +
+
+# Clean docs/ down to just the plan
+find docs/ ! -name 'STACK_MODERNIZATION.md' ! -name '.' -exec rm -rf {} +
+
+# 4. Commit the clean slate
+git add -A
+git commit -m "chore: demolish v4 codebase, preserve assets for v5 rewrite
+
+Remove all Nuxt 2 / Vue 2 / Express application code, config, and build
+artifacts. Preserve branding assets, 26 i18n translation files, test
+fixtures, changelog, and the v5 stack modernization plan.
+
+See docs/STACK_MODERNIZATION.md for the full v5 blueprint."
+```
+
+#### Post-Demolition: Repo State
+
+```
+v5 branch
+├── .git/
+├── .gitignore
+├── LICENSE
+├── docs/
+│   └── STACK_MODERNIZATION.md    ← the blueprint
+└── v5-assets/
+    ├── branding/
+    │   ├── wikiloop-doublecheck-logo.svg
+    │   ├── wikiloop-doublecheck-logo.png
+    │   ├── wikiloop-logo.svg
+    │   ├── wikiloop-logo.png
+    │   ├── favicon.ico
+    │   └── icon.png
+    ├── i18n/
+    │   ├── en.yml
+    │   ├── fr.yml
+    │   └── ... (26 locale files)
+    ├── test-fixtures/
+    │   ├── mwapi/small/
+    │   ├── mwapi/large/
+    │   └── wikitrust_feed.json
+    └── history/
+        ├── CHANGELOG.md
+        └── .all-contributorsrc
+```
+
+Phase 1 will move `v5-assets/branding/` → `packages/web/public/`, convert `v5-assets/i18n/*.yml` → `packages/core/i18n/*.json`, and reference `v5-assets/test-fixtures/` from integration tests. The `v5-assets/` directory is deleted once everything is relocated.
 
 ---
 
-### Phase 0 — Human Unblock ✅
+### Phase 0 — Human Unblock ✅ (requires project owner, not dev agents)
 
-All provisioning complete:
+These are things **only you** can do — provisioning accounts, registering with external services, and proving that access works. Dev agents are blocked until these are confirmed. Each item includes a **smoke test** so you know it actually works.
 
-- [x] Toolforge: tool `wikiloop-doublecheck`, SSH, ToolsDB, replicas verified
-- [x] OAuth 2.0: 3 consumers approved (local dev, Toolforge, wikiloop.org) — grants: Basic, Edit, Rollback, Patrol, Watchlist
-- [x] MongoDB Atlas: prod URI in `.env`, 321K interactions, 191 users
-- [x] Chrome Web Store: developer account `xinbenlv`, GCP service account `cws-publisher@wikiloop.iam.gserviceaccount.com`
-- [x] Toolforge deploy: live at `https://wikiloop-doublecheck.toolforge.org`
-- [x] Vercel deploy: live at `https://doublecheck.wikiloop.org` (CNAME to Vercel)
-- [x] UserScript: served at `/doublecheck.user.js`
-- [x] Chrome Extension: scaffolded in `packages/extension/`, sideloadable
+#### Toolforge Access
 
-Secrets strategy: all runtime secrets on Toolforge (`.env`) and Vercel (env vars). GitHub Actions secrets added only when CI needs them.
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Create `doublecheck` tool account on Toolforge (`toolforge-admin`) | `ssh wikiloop-doublecheck.toolforge.org` succeeds |
+| 2 | Verify ToolsDB credentials exist at `~/replica.my.cnf` | `sql tools` → `SELECT 1;` returns a row |
+| 3 | Verify Wikimedia replica access | `sql enwiki` → `SELECT rev_id FROM revision LIMIT 1;` returns a row |
+| 4 | Test a Buildpacks deploy with a hello-world Node app | `curl https://wikiloop-doublecheck.toolforge.org/` returns response |
+
+#### MediaWiki OAuth 2.0
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Register an OAuth 2.0 consumer at `meta.wikimedia.org/wiki/Special:OAuthConsumerRegistration/propose/oauth2` with grants: Basic rights, Edit existing pages, Rollback, Patrol, View your watchlist | Consumer approved, `client_id` + `client_secret` received |
+| 2 | Set callback URL: `http://localhost:3000/auth/callback` (dev); register a second consumer for production (`https://wikiloop-doublecheck.toolforge.org/auth/callback`) when ready to deploy | — |
+| 3 | Test the token exchange manually | `curl -X POST https://meta.wikimedia.org/w/rest.php/oauth2/access_token -d 'grant_type=authorization_code&...'` returns an access token |
+
+#### MongoDB Atlas
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Create a read-only user on the existing Atlas cluster | `mongosh $MONGO_URI --eval 'db.interactions.countDocuments()'` returns a count |
+
+#### Chrome Web Store
+
+| Step | Action | Smoke test |
+|------|--------|------------|
+| 1 | Register a Chrome Web Store developer account ($5 fee) | Dashboard accessible at `chrome.google.com/webstore/devconsole` |
+
+#### Secrets Strategy
+
+All runtime secrets live on **Toolforge** (the tool account's environment), not in GitHub:
+
+- `TOOLSDB_*` — already at `~/replica.my.cnf` on Toolforge
+- `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET` — set in the tool account's `.env`
+- `MONGO_URI` — MongoDB Atlas connection string for the application
+
+GitHub Actions secrets are only added later if CI jobs need them (e.g., integration tests, automated CWS publishing). Decide this in Phase 1 when the CI pipeline is designed.
+
+#### Phase 0 Validation Script
+
+Run `packages/server/scripts/validate-phase0.ts` (created by the Phase 1 agent) to confirm all external access is working. The script can also be run by a dev agent to programmatically verify before starting Phase 2.
+
+```
+$ pnpm run validate:phase0
+
+Phase 0 Validation
+==================
+
+Toolforge Access
+  [✓] SSH to wikiloop-doublecheck.toolforge.org .............. connected
+  [✓] ToolsDB query (SELECT 1) ...................... ok
+  [✓] Replica query (enwiki revision) ............... rev_id=1234567890
+  [✓] HTTPS endpoint reachable ...................... 200 OK
+
+MediaWiki OAuth 2.0
+  [✓] OAuth client_id is set ....................... ok
+  [✓] OAuth client_secret is set ................... ok
+  [✓] Token exchange endpoint reachable ............ 200 OK
+  [✓] Test token exchange .......................... access_token received
+  [✓] Token → userinfo call ........................ username=DoubleCheckBot
+
+MongoDB Atlas
+  [✓] MONGO_URI is set ............................. ok
+  [✓] Connection to Atlas cluster .................. connected
+  [✓] Read access (interactions count) ............. 48,231 documents
+  [✓] Read access (users count) .................... 1,205 documents
+
+Chrome Web Store
+  [✓] Developer account registered ................. (manual confirmation)
+
+CWS Service Account
+  [✓] Key file exists .............................. ok
+
+==================
+Result: 13/13 passed, 0 failed
+Phase 0 is COMPLETE — ready for Phase 1.
+```
+
+The script validates:
+
+| Check | What it proves | Failure means |
+|-------|---------------|---------------|
+| SSH to Toolforge | Tool account exists, SSH key is configured | Tool not created, or SSH key not added to Toolforge |
+| ToolsDB SELECT 1 | Database credentials work, ToolsDB is reachable | `replica.my.cnf` missing or credentials wrong |
+| Replica revision query | Can read live Wikipedia data from Toolforge | Replica access not granted, or wrong host |
+| HTTPS endpoint | Buildpacks deploy pipeline works, ingress routes traffic | Build failed, or tool not webservice-enabled |
+| OAuth client_id/secret set | Credentials are available as env vars | Not provisioned or not added to `.env` / secrets |
+| Token exchange | OAuth consumer is approved and callback URLs are correct | Consumer pending approval, or wrong callback URL |
+| Token → userinfo | Full OAuth round-trip works; token has correct scopes | Insufficient scopes on the consumer registration |
+| MongoDB connection + counts | Atlas credentials work, data is readable | Wrong URI, IP allowlist blocking, or user lacks read access |
+| CWS service account key | Automated extension publishing is possible | Key file missing or service account not added to CWS dashboard |
+
+**Phase 0 is done when the validation script reports all checks passed.** The Chrome Web Store check is manual (the script prompts for confirmation) since there's no API to verify account registration.
+
+> **Note:** The validation script itself is created during Phase 1 as part of monorepo scaffolding. Before that, use the individual smoke test commands listed in each section above.
 
 ### Phase 1 — Foundation (sequential, single agent)
 
@@ -372,7 +623,7 @@ These are the boundaries between packages. Defined as TypeScript types/interface
 - `docker compose up` starts MongoDB + MediaWiki locally
 - Mongoose models connect to local MongoDB successfully
 
-### Phase 2 — Parallel Build (5 subagents)
+### Phase 2 — Parallel Build (6 subagents)
 
 Once Phase 1 is complete, the following workstreams run **concurrently**. Each subagent owns one package and codes against the shared contracts.
 
@@ -380,13 +631,14 @@ Once Phase 1 is complete, the following workstreams run **concurrently**. Each s
 Phase 1 (Foundation)
         │
         ▼
-  ┌─────┼─────┬─────────┬────────────┐
-  ▼     ▼     ▼         ▼            ▼
- [A]   [B]   [C]       [D]          [E]
-Server Core  Web SPA   UserScript   Extension
-  │     │     │         │            │
-  ▼     ▼     ▼         ▼            ▼
-  └─────┴─────┴─────────┴────────────┘
+  ┌─────┼─────┬─────────┬────────────┬──────────────┐
+  ▼     ▼     ▼         ▼            ▼              ▼
+ [A]   [B]   [C]       [D]          [E]            [F]
+Server Core  Web SPA   UserScript   Extension      Purge
+                                                   Cron
+  │     │     │         │            │              │
+  ▼     ▼     ▼         ▼            ▼              ▼
+  └─────┴─────┴─────────┴────────────┴──────────────┘
         │
         ▼
   Phase 3 (Integration & Launch)
@@ -401,7 +653,6 @@ Server Core  Web SPA   UserScript   Extension
 - SSE endpoint with heartbeat + event IDs
 - CORS middleware (Wikipedia origins + extension origin)
 - Rate limiting, `/healthz` health check, structured logging (pino)
-- Purge cron job: daily purge of transient collections (FeedRevision, FeedPage, Sockets, Sessions, LiveClients, DecisionLog), optional Slack reporting
 - **Tests:** all server unit tests, integration tests against MongoDB Docker
 - **Dependencies on Phase 1:** Mongoose models, API type definitions, `.env.example`
 - **No dependency on other subagents** — can validate with `curl` / Vitest against the API schema
@@ -450,6 +701,16 @@ Server Core  Web SPA   UserScript   Extension
 - **Depends on Subagent B** (`@doublecheck/core` components)
 - **Can start immediately** on Manifest V3 scaffolding, service worker, and `chrome.identity` flow while B builds components
 
+#### Subagent F — Purge Cron Job
+
+- `packages/server/src/cron/purge.ts`
+- Purge transient collections (FeedRevision, FeedPage, Sockets, Sessions, LiveClients, DecisionLog)
+- Preserve core data (Interaction, UserPreferences)
+- Optional Slack webhook reporting
+- **Tests:** unit test verifying correct collections are purged
+- **Dependencies on Phase 1:** Mongoose models only
+- **Requires:** MongoDB Atlas credentials
+
 ### Phase 3 — Integration & Launch (sequential)
 
 After all subagents complete:
@@ -465,12 +726,97 @@ After all subagents complete:
 
 ## Testing Strategy
 
-### Testing Overview
+### Unit Tests (Vitest)
 
-- **Unit tests** (Vitest): component rendering, composable logic, API handler validation, middleware behavior — per package
-- **Integration tests**: Mongoose CRUD against MongoDB Docker, full API request/response cycles, purge cron verification
-- **E2E tests** (Playwright): OAuth login flow, review + judgement flow, feed navigation, UserScript injection on MediaWiki Docker, Extension content script + popup
-- **CI** (GitHub Actions): lint → type-check → unit tests (parallel) → integration (MongoDB container) → E2E (browser install). Runs on push to main and all PRs.
+All packages use Vitest with Vite-native transforms. Target: critical paths covered; no arbitrary coverage percentage mandate.
+
+#### `packages/core` — Component & Composable Tests
+
+Via `@testing-library/vue` — render components, assert DOM output and emitted events.
+
+- **RevisionCard**: renders revision metadata (author, timestamp, wiki); shows loading skeleton while fetching
+- **DiffBox**: renders added/removed lines from diff2html output; handles empty diffs gracefully
+- **ActionPanel**: emits correct judgement values (`ShouldRevert`, `NotSure`, `LooksGood`) on button click; disables buttons after submission
+- **JudgementPanel**: displays community vote tallies; updates reactively when new votes arrive
+- **`useRevision()`**: fetches revision data from API client; returns error state on network failure
+- **`useJudgement()`**: submits judgement payload; distinguishes verified vs unverified attribution
+- **`useLiftWing()`**: parses Lift Wing response into damaging/good-faith scores; handles model unavailability
+- **API client**: constructs correct URLs and headers; retries on 5xx; respects abort signals
+
+#### `packages/server` — Handler & Middleware Tests
+
+Mock database layer, test API route logic.
+
+- **Judgement submission**: validates payload shape; rejects missing `wiki`/`rev_id`; stores with correct user attribution
+- **Revision feed**: returns paginated results; filters by wiki; respects `since` timestamp parameter
+- **Lift Wing proxy**: forwards requests to Lift Wing API; caches scores per revision; returns cached result on repeated requests
+- **OAuth 2.0 flow**: exchanges authorization code for token; creates/updates user record; sets session cookie
+- **Server-side identity verification**: calls MW API `action=query&meta=userinfo` with forwarded token; rejects mismatched usernames; marks temp account judgements as unverified
+- **CORS middleware**: allows requests from `*.wikipedia.org` origins; allows `chrome-extension://` origin; rejects unlisted origins; caches preflight responses
+- **SSE endpoint**: sends `:ping` heartbeat every 15s; streams new judgement events; includes `id` field for `Last-Event-ID` resume
+- **Rate limiting**: throttles excessive requests per IP/user; returns 429 with `Retry-After` header
+- **Health check**: `GET /healthz` returns 200 when MongoDB is connected; returns 503 when connection is lost
+
+#### `packages/userscript` — UserScript-Specific Tests
+
+- **Runtime detection**: correctly identifies ResourceLoader Vue 3 availability; falls back to self-hosted bundle when `mw.loader` cannot resolve `vue`
+- **CSP failure handling**: catches blocked script load; logs `[DoubleCheck]` warning; does not inject DOM elements
+- **Identity detection**: correctly classifies `mw.user.isNamed()`, `mw.user.isTemp()`, `mw.user.isAnon()` states; extracts `wgUserName` for named and temp accounts; returns `null` for anonymous
+- **i18n fallback**: uses `mw.msg()` when available; falls back to `vue-i18n` when `mw.messages` is not loaded
+
+#### `packages/extension` — Extension-Specific Tests
+
+- **Background service worker**: routes API calls from content script; manages OAuth token lifecycle in `chrome.storage.session`; handles SSE connection and forwards events to content script
+- **Content script isolation**: injects into Wikipedia pages without interfering with page scripts; cleans up on navigation
+
+### Integration Tests
+
+Run against real services (Docker in CI).
+
+- **Mongoose queries against MongoDB**: CRUD operations on all collections; verify indexes are created
+- **API contract tests**: full request/response cycle through Hono handlers against real MongoDB — submit judgement, fetch feed, verify stored data matches
+- **Purge cron job**: verify transient collections are purged correctly while preserving interactions and user data
+
+### E2E Tests (Playwright)
+
+#### `packages/web` — Web SPA
+
+Playwright tests against a running dev server.
+
+- **OAuth login flow**: redirect to MW OAuth → callback → session established → username displayed
+- **Review flow**: load revision → see diff + Lift Wing scores → submit judgement → see updated community tally
+- **Feed navigation**: paginate through revision feed; filter by wiki; see risk badges
+- **Leaderboard**: displays ranked users; updates after new judgements
+- **Landing page SEO**: verify `<title>`, `og:*` meta tags, JSON-LD structured data are present; verify review pages have `noindex`
+
+#### `packages/userscript` — UserScript on MediaWiki
+
+Playwright with a local MediaWiki Docker instance (`mediawiki-docker`).
+
+- **Diff page injection**: navigate to `Special:Diff/*` → DoubleCheck panel appears below diff → Lift Wing scores displayed → vote buttons functional
+- **RecentChanges badges**: navigate to `Special:RecentChanges` → risk badges appear on edit rows with correct color coding
+- **Watchlist badges**: same as RecentChanges on `Special:Watchlist`
+- **Identity detection**: log in as named user → verify `isNamed()` path; browse anonymously → verify `isAnon()` path and read-only mode
+- **Vue 3 fallback**: test against a MediaWiki instance without ResourceLoader Vue 3 → verify self-hosted bundle loads and panel renders
+
+#### `packages/extension` — Chrome Extension
+
+Playwright with `--load-extension` flag.
+
+- **Content script injection**: navigate to Wikipedia diff page → review panel appears → vote buttons work
+- **Popup**: click extension icon → popup shows leaderboard and settings
+- **OAuth flow**: trigger login from popup → `chrome.identity` flow completes → token stored → authenticated API calls succeed
+- **CSP isolation**: verify content script does not trigger CSP violations on Wikipedia pages
+
+### CI Pipeline (GitHub Actions)
+
+- Lint + type-check (all packages, fast)
+- Unit tests (all packages, parallel)
+- Integration tests (server, requires MongoDB service container)
+- E2E tests (web + userscript + extension, requires browser install step)
+- Run on: push to main, all PRs
+
+> **Detailed test cases:** See [TESTING.md](TESTING.md) for per-package test specifications.
 
 ---
 
@@ -529,9 +875,29 @@ The API server at `wikiloop-doublecheck.toolforge.org` must handle cross-origin 
 
 ## Landing Page SEO
 
-- `<title>`, `<meta description>`, OpenGraph (`og:title`, `og:image`, `og:url`), Twitter Card (`summary_large_image`), JSON-LD `WebApplication` schema
+The landing page (`/`) is a static HTML page served by the Hono API server (or a separate static build), designed for discoverability.
+
+### Meta Tags
+
+- `<title>`: "DoubleCheck — Crowdsourced Vandalism Review for Wikipedia"
+- `<meta name="description">`: concise project summary
 - Canonical URL: `https://doublecheck.wikiloop.org/`
-- Review pages (`/review/*`, `/feed/*`, `/leaderboard/*`): `<meta name="robots" content="noindex">`
+
+### OpenGraph & Twitter Cards
+
+- `og:title`, `og:description`, `og:image` (project logo or screenshot of review panel)
+- `og:type`: `website`
+- `og:url`: canonical URL
+- `twitter:card`: `summary_large_image`
+
+### Structured Data
+
+- JSON-LD `WebApplication` schema: name, description, URL, applicationCategory ("Productivity"), operatingSystem ("Web")
+- Optional: `SoftwareSourceCode` pointing to the GitHub repository
+
+### Review Pages
+
+- All review routes (`/review/*`, `/feed/*`, `/leaderboard/*`) include `<meta name="robots" content="noindex">` to prevent indexing of dynamic content
 
 ---
 
