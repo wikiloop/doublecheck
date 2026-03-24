@@ -31,10 +31,10 @@ defineProps<JudgementPanelProps>();
 
 <style scoped>
 .dc-judgement-panel {
-  border: 1px solid #c8ccd1;
+  border: 1px solid var(--border-color-subtle);
   border-radius: 4px;
   padding: 1rem;
-  background: #fff;
+  background: var(--background-color-base);
 }
 
 .dc-judgement-panel__title {
@@ -57,12 +57,12 @@ defineProps<JudgementPanelProps>();
 }
 
 .dc-tally--revert { background: #fee7e6; }
-.dc-tally--notsure { background: #eaecf0; }
+.dc-tally--notsure { background: var(--background-color-neutral); }
 .dc-tally--good { background: #d5fdf4; }
 
 .dc-tally__label {
   font-size: 0.75rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-tally__count {

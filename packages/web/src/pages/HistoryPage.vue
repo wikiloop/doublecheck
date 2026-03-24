@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { CdxButton } from "@wikimedia/codex";
 import { useAuth } from "../composables/useAuth";
 import type { Judgement, UserHistoryResponse } from "@doublecheck/core";
 
@@ -47,9 +48,9 @@ function actionLabel(action: string): string {
 }
 
 function actionColor(action: string): string {
-  if (action === "ShouldRevert") return "#d33";
-  if (action === "LooksGood") return "#14866d";
-  return "#72777d";
+  if (action === "ShouldRevert") return "var(--color-destructive)";
+  if (action === "LooksGood") return "var(--color-success)";
+  return "var(--color-placeholder)";
 }
 
 onMounted(async () => {
@@ -114,13 +115,12 @@ onMounted(async () => {
       v-if="nextCursor"
       class="dc-history-page__more"
     >
-      <button
-        class="dc-btn dc-btn--secondary"
+      <CdxButton
         :disabled="loading"
         @click="loadHistory(nextCursor)"
       >
         Load more
-      </button>
+      </CdxButton>
     </div>
   </div>
 </template>
@@ -135,7 +135,7 @@ onMounted(async () => {
 .dc-history-page__empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-history-list {
@@ -149,13 +149,13 @@ onMounted(async () => {
   align-items: center;
   gap: 1rem;
   padding: 0.6rem 1rem;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--background-color-neutral);
   border-radius: 4px;
   margin-bottom: 0.5rem;
 }
 
 .dc-history-item__link {
-  color: #3366cc;
+  color: var(--color-progressive);
   text-decoration: none;
   font-weight: 600;
 }
@@ -168,25 +168,11 @@ onMounted(async () => {
 .dc-history-item__time {
   margin-left: auto;
   font-size: 0.8rem;
-  color: #72777d;
+  color: var(--color-placeholder);
 }
 
 .dc-history-page__more {
   text-align: center;
   padding: 1rem 0;
-}
-
-.dc-btn {
-  padding: 0.5rem 1.2rem;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.dc-btn--secondary {
-  background: #fff;
-  color: #3366cc;
-  border: 1px solid #3366cc;
 }
 </style>

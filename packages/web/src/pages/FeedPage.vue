@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { CdxButton, CdxSelect } from "@wikimedia/codex";
 import type { Revision, FeedResponse } from "@doublecheck/core";
 
 const route = useRoute();
@@ -115,13 +116,12 @@ watch(selectedWiki, () => {
       v-if="nextCursor"
       class="dc-feed-page__more"
     >
-      <button
-        class="dc-btn dc-btn--secondary"
+      <CdxButton
         :disabled="loading"
         @click="loadFeed(route.params.feedName as string, nextCursor)"
       >
         Load more
-      </button>
+      </CdxButton>
     </div>
   </div>
 </template>
@@ -141,7 +141,7 @@ watch(selectedWiki, () => {
 
 .dc-select {
   padding: 0.4rem 0.6rem;
-  border: 1px solid #a2a9b1;
+  border: 1px solid var(--border-color-base);
   border-radius: 4px;
   font-size: 0.9rem;
 }
@@ -150,7 +150,7 @@ watch(selectedWiki, () => {
 .dc-feed-page__empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-feed-list {
@@ -164,15 +164,15 @@ watch(selectedWiki, () => {
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  border: 1px solid #eaecf0;
+  border: 1px solid var(--background-color-neutral);
   border-radius: 4px;
   margin-bottom: 0.5rem;
   cursor: pointer;
-  background: #fff;
+  background: var(--background-color-base);
 }
 
 .dc-feed-item:hover {
-  background: #f8f9fa;
+  background: var(--background-color-neutral-subtle);
 }
 
 .dc-feed-item__main {
@@ -188,39 +188,17 @@ watch(selectedWiki, () => {
 
 .dc-feed-item__meta {
   font-size: 0.8rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-feed-item__time {
   font-size: 0.8rem;
-  color: #72777d;
+  color: var(--color-placeholder);
   white-space: nowrap;
 }
 
 .dc-feed-page__more {
   text-align: center;
   padding: 1rem 0;
-}
-
-.dc-btn {
-  padding: 0.5rem 1.2rem;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.dc-btn--secondary {
-  background: #fff;
-  color: #3366cc;
-  border: 1px solid #3366cc;
-}
-
-.dc-btn--secondary:hover {
-  background: #eaf3ff;
-}
-
-.dc-btn--secondary:disabled {
-  opacity: 0.5;
 }
 </style>

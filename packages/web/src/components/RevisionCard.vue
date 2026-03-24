@@ -9,9 +9,9 @@ function formatScore(score: number): string {
 }
 
 function scoreColor(score: number): string {
-  if (score >= 0.7) return "#d33";
-  if (score >= 0.4) return "#fc3";
-  return "#14866d";
+  if (score >= 0.7) return "var(--color-destructive)";
+  if (score >= 0.4) return "var(--color-warning)";
+  return "var(--color-success)";
 }
 </script>
 
@@ -64,14 +64,14 @@ function scoreColor(score: number): string {
 
 <style scoped>
 .dc-revision-card {
-  border: 1px solid #c8ccd1;
+  border: 1px solid var(--border-color-subtle);
   border-radius: 4px;
   padding: 1rem;
-  background: #fff;
+  background: var(--background-color-base);
 }
 
 .dc-revision-card__loading {
-  color: #72777d;
+  color: var(--color-placeholder);
   font-style: italic;
 }
 
@@ -88,7 +88,7 @@ function scoreColor(score: number): string {
 }
 
 .dc-revision-card__wiki {
-  background: #eaecf0;
+  background: var(--background-color-neutral);
   padding: 0.1rem 0.4rem;
   border-radius: 3px;
   font-size: 0.8rem;
@@ -98,13 +98,13 @@ function scoreColor(score: number): string {
   display: flex;
   gap: 1rem;
   font-size: 0.85rem;
-  color: #54595d;
+  color: var(--color-subtle);
   margin-top: 0.5rem;
 }
 
 .dc-revision-card__comment {
   font-size: 0.9rem;
-  color: #202122;
+  color: var(--color-base);
   margin: 0.5rem 0 0;
   font-style: italic;
 }

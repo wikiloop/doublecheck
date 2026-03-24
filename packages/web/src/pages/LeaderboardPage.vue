@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { CdxButton } from "@wikimedia/codex";
 import type { LeaderboardEntry, LeaderboardResponse } from "@doublecheck/core";
 
 const { t } = useI18n();
@@ -47,15 +48,15 @@ watch(period, loadLeaderboard);
     <div class="dc-leaderboard-page__header">
       <h1>{{ t("Label-TopUsers") }}</h1>
       <div class="dc-period-filter">
-        <button
+        <CdxButton
           v-for="(label, key) in periodLabels"
           :key="key"
-          class="dc-period-btn"
-          :class="{ 'dc-period-btn--active': period === key }"
+          :weight="period === key ? 'primary' : 'normal'"
+          :action="period === key ? 'progressive' : 'default'"
           @click="period = key as TimePeriod"
         >
           {{ t(label) }}
-        </button>
+        </CdxButton>
       </div>
     </div>
 
@@ -122,26 +123,11 @@ watch(period, loadLeaderboard);
   gap: 0.25rem;
 }
 
-.dc-period-btn {
-  padding: 0.35rem 0.7rem;
-  border: 1px solid #a2a9b1;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.dc-period-btn--active {
-  background: #3366cc;
-  color: #fff;
-  border-color: #3366cc;
-}
-
 .dc-leaderboard-page__loading,
 .dc-leaderboard-page__empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-leaderboard-table {
@@ -153,13 +139,13 @@ watch(period, loadLeaderboard);
 .dc-leaderboard-table td {
   padding: 0.6rem 1rem;
   text-align: left;
-  border-bottom: 1px solid #eaecf0;
+  border-bottom: 1px solid var(--background-color-neutral);
 }
 
 .dc-leaderboard-table th {
-  background: #f8f9fa;
+  background: var(--background-color-neutral-subtle);
   font-size: 0.85rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-rank {

@@ -28,12 +28,12 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  color: #202122;
-  background: #f8f9fa;
+  color: var(--color-base);
+  background: var(--background-color-neutral-subtle);
   line-height: 1.5;
 }
 
 a {
-  color: #3366cc;
+  color: var(--color-progressive);
 }
 </style>

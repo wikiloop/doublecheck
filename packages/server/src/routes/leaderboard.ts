@@ -7,9 +7,25 @@ const leaderboard = new Hono();
 /** GET /api/leaderboard */
 leaderboard.get("/", async (c) => {
   const limit = Math.min(parseInt(c.req.query("limit") ?? "50", 10), 100);
+  const period = c.req.query("period") ?? "all";
+
+  // Compute date cutoff for period filtering
+  let dateFilter: Date | null = null;
+  const now = new Date();
+  if (period === "day")
+    dateFilter = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  else if (period === "week")
+    dateFilter = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  else if (period === "month")
+    dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Aggregate judgement counts per user
-  const pipeline = [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pipeline: any[] = [];
+  if (dateFilter) {
+    pipeline.push({ $match: { createdAt: { $gte: dateFilter } } });
+  }
+  pipeline.push(
     {
       $group: {
         _id: "$userId",
@@ -18,7 +34,7 @@ leaderboard.get("/", async (c) => {
     },
     { $sort: { count: -1 as const } },
     { $limit: limit },
-  ];
+  );
 
   const results = await InteractionModel.aggregate(pipeline);
 

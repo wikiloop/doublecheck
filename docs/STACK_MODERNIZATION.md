@@ -249,6 +249,128 @@ In both cases, `mw.loader.using` ensures Vue 3 and Codex are loaded before the I
 └────────────────────────────────────────────────────────────────┘
 ```
 
+## Web SPA UI Mockups
+
+### AppLayout (shared across all pages)
+
+```
+┌─── dc-app-layout ────────────────────────────────────────────┐
+│  ┌─ dc-header (sticky) ───────────────────────────────────┐  │
+│  │ [Logo]  Review Feed | Feed | Top Users | History  [Login] │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌─ dc-main (max-width: 1200px) ─────────────────────────┐  │
+│  │                                                         │  │
+│  │  <router-view />                                        │  │
+│  │                                                         │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌─ dc-footer ─────────────────────────────────────────────┐ │
+│  │ Powered by WikiLoop | GitHub | Meta-Wiki | ToS | Privacy│ │
+│  └─────────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### ReviewPage
+
+```
+┌─── dc-review-page ───────────────────────────────────────────┐
+│                                                               │
+│  ┌─ RevisionCard ──────────────────────────────────────────┐ │
+│  │  Article Title                          [enwiki]         │ │
+│  │  Rev 12345 · by ExampleUser · 2026-03-23T12:34:00Z      │ │
+│  │  Edit comment in italic                                  │ │
+│  │  Damaging: 78%    Good faith: 15%                        │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌─ DiffBox ───────────────────────────────────────────────┐ │
+│  │  - The population of Berlin is 3.5 million              │ │
+│  │  + The population of Berlin is 69 billion lol           │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌─ ActionPanel ──────────┐ ┌─ JudgementPanel ────────────┐ │
+│  │  Your Judgement         │ │  Community Judgement          │ │
+│  │                         │ │                               │ │
+│  │  [ShouldRevert]         │ │  ShouldRevert: 3             │ │
+│  │  [Not Sure]             │ │  Not Sure: 1                 │ │
+│  │  [LooksGood]            │ │  LooksGood: 2                │ │
+│  └─────────────────────────┘ └───────────────────────────────┘│
+│                                                               │
+│                       [Next]                                  │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### LeaderboardPage
+
+```
+┌─── dc-leaderboard-page ─────────────────────────────────────┐
+│                                                               │
+│  Top Users                  [Day] [Week] [Month] [All Time]  │
+│                                                               │
+│  ┌──────┬────────────────────────────┬──────────────────┐    │
+│  │ Rank │ User                       │ Judgements        │    │
+│  ├──────┼────────────────────────────┼──────────────────┤    │
+│  │  1   │ PowerReviewer              │ 1,247             │    │
+│  │  2   │ VandalFighter99            │ 983               │    │
+│  │  3   │ NewPatroller               │ 541               │    │
+│  └──────┴────────────────────────────┴──────────────────┘    │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### FeedPage
+
+```
+┌─── dc-feed-page ─────────────────────────────────────────────┐
+│                                                               │
+│  Feed                                        [enwiki ▼]      │
+│                                                               │
+│  ┌─ feed-item ─────────────────────────────────────────────┐ │
+│  │ Article Title                                           │ │
+│  │ enwiki · rev 12345 · ExampleUser       2026-03-23T12:34│ │
+│  └─────────────────────────────────────────────────────────┘ │
+│  ┌─ feed-item ─────────────────────────────────────────────┐ │
+│  │ Another Article                                         │ │
+│  │ enwiki · rev 12346 · AnotherUser       2026-03-23T12:35│ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+│                     [Load more]                               │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### LandingPage
+
+```
+┌─── dc-landing ───────────────────────────────────────────────┐
+│                                                               │
+│                      [Logo 80px]                              │
+│                 WikiLoop DoubleCheck                           │
+│      Community tool for reviewing Wikipedia edits             │
+│         using AI-assisted scoring and human judgement          │
+│                                                               │
+│          [Use on Toolforge]  [Use on wikiloop.org]            │
+│                                                               │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐        │
+│  │ AI-Assist│ │ Community│ │ Real-Time│ │Multi-Wiki│         │
+│  │ Review   │ │ Judgement│ │ Feed     │ │ Support  │         │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘        │
+│  ─────────────────────────────────────────────────────        │
+│               Additional Tools                                │
+│        [Install UserScript]  [Chrome Extension]               │
+│  ─────────────────────────────────────────────────────        │
+│               How It Works                                    │
+│  ┌──────────────────────────────────────────────┐            │
+│  │ 1. Edit appears with AI risk score           │            │
+│  │ 2. You review and judge                      │            │
+│  │ 3. Community consensus drives quality        │            │
+│  │                    [Start Reviewing]          │            │
+│  └──────────────────────────────────────────────┘            │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## Internationalization (i18n)

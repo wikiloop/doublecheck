@@ -29,16 +29,16 @@ defineProps<DiffBoxProps>();
 
 <style scoped>
 .dc-diff-box {
-  border: 1px solid #c8ccd1;
+  border: 1px solid var(--border-color-subtle);
   border-radius: 4px;
   padding: 1rem;
-  background: #fff;
+  background: var(--background-color-base);
   overflow-x: auto;
 }
 
 .dc-diff-box__loading,
 .dc-diff-box__empty {
-  color: #72777d;
+  color: var(--color-placeholder);
   font-style: italic;
 }
 
@@ -50,5 +50,43 @@ defineProps<DiffBoxProps>();
 .dc-diff-box__content :deep(del) {
   background: #e88e8e;
   text-decoration: none;
+}
+
+/* MediaWiki action=compare diff table styles */
+.dc-diff-box__content :deep(.diff) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dc-diff-box__content :deep(.diff td) {
+  padding: 2px 8px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  vertical-align: top;
+}
+
+.dc-diff-box__content :deep(.diff-addedline) {
+  background: #d4edda;
+}
+
+.dc-diff-box__content :deep(.diff-deletedline) {
+  background: #f8d7da;
+}
+
+.dc-diff-box__content :deep(.diff-context) {
+  color: var(--color-subtle);
+}
+
+.dc-diff-box__content :deep(.diff-marker) {
+  width: 20px;
+  text-align: center;
+  user-select: none;
+}
+
+.dc-diff-box__content :deep(td.diff-lineno) {
+  font-weight: bold;
+  background: var(--background-color-neutral-subtle);
+  border-bottom: 1px solid var(--border-color-subtle);
+  padding: 4px 8px;
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { CdxButton } from "@wikimedia/codex";
 
 onMounted(() => {
   // SEO: JSON-LD structured data
@@ -36,22 +37,23 @@ onMounted(() => {
         and human judgement.
       </p>
       <div class="dc-hero__cta">
-        <a
-          href="https://doublecheck.toolforge.org"
-          class="dc-btn dc-btn--primary dc-btn--lg"
-          target="_blank"
-          rel="noopener"
+        <CdxButton
+          action="progressive"
+          weight="primary"
+          size="large"
+          :href="'https://doublecheck.toolforge.org'"
+          class="dc-hero__btn"
         >
           Use on Toolforge
-        </a>
-        <a
-          href="https://doublecheck.wikiloop.org"
-          class="dc-btn dc-btn--secondary dc-btn--lg"
-          target="_blank"
-          rel="noopener"
+        </CdxButton>
+        <CdxButton
+          weight="normal"
+          size="large"
+          :href="'https://doublecheck.wikiloop.org'"
+          class="dc-hero__btn"
         >
           Use on wikiloop.org
-        </a>
+        </CdxButton>
       </div>
     </section>
 
@@ -128,11 +130,13 @@ onMounted(() => {
           <strong>Not Sure</strong>, or <strong>Looks Good</strong>.<br>
           3. Community consensus drives quality across all Wikis.
         </p>
-        <router-link
-          to="/review"
-          class="dc-btn dc-btn--primary"
-        >
-          Start Reviewing
+        <router-link to="/review">
+          <CdxButton
+            action="progressive"
+            weight="primary"
+          >
+            Start Reviewing
+          </CdxButton>
         </router-link>
       </div>
     </section>
@@ -162,7 +166,7 @@ onMounted(() => {
 
 .dc-hero__subtitle {
   font-size: 1.15rem;
-  color: #54595d;
+  color: var(--color-subtle);
   max-width: 600px;
   margin: 0 auto 1.5rem;
 }
@@ -172,40 +176,6 @@ onMounted(() => {
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-}
-
-.dc-btn {
-  display: inline-block;
-  padding: 0.5rem 1.2rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 0.95rem;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.dc-btn--lg {
-  padding: 0.7rem 1.5rem;
-  font-size: 1rem;
-}
-
-.dc-btn--primary {
-  background: #3366cc;
-  color: #fff;
-}
-
-.dc-btn--primary:hover {
-  background: #2a4b8d;
-}
-
-.dc-btn--secondary {
-  background: #fff;
-  color: #3366cc;
-  border-color: #3366cc;
-}
-
-.dc-btn--secondary:hover {
-  background: #eaf3ff;
 }
 
 .dc-features {
@@ -232,14 +202,14 @@ onMounted(() => {
 
 .dc-feature p {
   font-size: 0.9rem;
-  color: #54595d;
+  color: var(--color-subtle);
   margin: 0;
 }
 
 .dc-extensions {
   text-align: center;
   padding: 2rem 0;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--background-color-neutral);
 }
 
 .dc-extensions h2 {
@@ -254,21 +224,21 @@ onMounted(() => {
 }
 
 .dc-extension-link {
-  color: #3366cc;
+  color: var(--color-progressive);
   text-decoration: none;
   padding: 0.4rem 0.8rem;
-  border: 1px solid #c8ccd1;
+  border: 1px solid var(--border-color-subtle);
   border-radius: 4px;
 }
 
 .dc-extension-link:hover {
-  background: #eaecf0;
+  background: var(--background-color-neutral);
 }
 
 .dc-preview {
   text-align: center;
   padding: 2rem 0;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--background-color-neutral);
 }
 
 .dc-preview h2 {
@@ -277,8 +247,8 @@ onMounted(() => {
 }
 
 .dc-preview__card {
-  background: #f8f9fa;
-  border: 1px solid #c8ccd1;
+  background: var(--background-color-neutral-subtle);
+  border: 1px solid var(--border-color-subtle);
   border-radius: 8px;
   padding: 1.5rem;
   text-align: left;

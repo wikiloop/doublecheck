@@ -9,6 +9,7 @@ import type {
   RevisionResponse,
   JudgementsResponse,
 } from "@doublecheck/core";
+import { CdxButton } from "@wikimedia/codex";
 import RevisionCard from "../components/RevisionCard.vue";
 import DiffBox from "../components/DiffBox.vue";
 import ActionPanel from "../components/ActionPanel.vue";
@@ -172,12 +173,13 @@ watch(
       </div>
 
       <div class="dc-review-page__nav">
-        <button
-          class="dc-btn dc-btn--primary"
+        <CdxButton
+          action="progressive"
+          weight="primary"
           @click="loadNext"
         >
           {{ t("Button-Next") }}
-        </button>
+        </CdxButton>
       </div>
     </template>
 
@@ -186,12 +188,13 @@ watch(
       class="dc-review-page__empty"
     >
       <p>No revision loaded. Waiting for feed data...</p>
-      <button
-        class="dc-btn dc-btn--primary"
+      <CdxButton
+        action="progressive"
+        weight="primary"
         @click="loadNext"
       >
         {{ t("Button-Next") }}
-      </button>
+      </CdxButton>
     </div>
   </div>
 </template>
@@ -207,7 +210,7 @@ watch(
 .dc-review-page__empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-review-page__diff {
@@ -224,23 +227,6 @@ watch(
   display: flex;
   justify-content: center;
   padding: 1rem 0;
-}
-
-.dc-btn {
-  padding: 0.5rem 1.2rem;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.dc-btn--primary {
-  background: #3366cc;
-  color: #fff;
-}
-
-.dc-btn--primary:hover {
-  background: #2a4b8d;
 }
 
 @media (max-width: 600px) {

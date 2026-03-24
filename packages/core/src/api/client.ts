@@ -76,8 +76,9 @@ export class ApiClient {
     return this.request(`/api/judgements/${encodeURIComponent(wiki)}/${revId}`, { signal });
   }
 
-  getLeaderboard(signal?: AbortSignal): Promise<LeaderboardResponse> {
-    return this.request("/api/leaderboard", { signal });
+  getLeaderboard(period?: string, signal?: AbortSignal): Promise<LeaderboardResponse> {
+    const params = period ? `?period=${encodeURIComponent(period)}` : "";
+    return this.request(`/api/leaderboard${params}`, { signal });
   }
 
   getUserHistory(userId: string, cursor?: string, signal?: AbortSignal): Promise<UserHistoryResponse> {

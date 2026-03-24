@@ -64,15 +64,15 @@ onMounted(async () => {
 }
 
 .dc-auth-callback__error {
-  color: #d33;
+  color: var(--color-destructive);
 }
 
 .dc-auth-callback__error a {
-  color: #3366cc;
+  color: var(--color-progressive);
 }
 
 .dc-auth-callback__loading {
-  color: #54595d;
+  color: var(--color-subtle);
   font-size: 1.1rem;
 }
 </style>

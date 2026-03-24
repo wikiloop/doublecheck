@@ -22,6 +22,7 @@ vi.mock("../db/models/index.js", () => ({
   RevisionModel: {
     findOne: vi.fn(),
     create: vi.fn(),
+    updateOne: vi.fn().mockResolvedValue(undefined),
     bulkWrite: vi.fn().mockResolvedValue(undefined),
     find: vi.fn(),
     aggregate: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock("../db/models/index.js", () => ({
 // Mock external API calls
 vi.mock("../lib/mediawiki.js", () => ({
   fetchRevisionFromMW: vi.fn(),
+  fetchDiffFromMW: vi.fn().mockResolvedValue(null),
   fetchRecentChanges: vi.fn(),
   verifyMWToken: vi.fn(),
 }));

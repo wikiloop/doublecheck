@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Revision, RevisionResponse } from "@doublecheck/core";
 import { RevisionModel } from "../db/models/index.js";
-import { fetchRevisionFromMW } from "../lib/mediawiki.js";
+import { fetchRevisionFromMW, fetchDiffFromMW } from "../lib/mediawiki.js";
 import { fetchLiftWingScore } from "../lib/liftWingCache.js";
 
 const revision = new Hono();
@@ -36,6 +36,19 @@ revision.get("/:wiki/:revId", async (c) => {
     }
   }
 
+  // Fetch diff HTML if not already cached
+  let diffHtml = rev.diffHtml;
+  if (!diffHtml) {
+    diffHtml =
+      (await fetchDiffFromMW(wiki, revId, rev.parentRevId)) ?? undefined;
+    // Cache in DB (non-blocking)
+    if (diffHtml) {
+      RevisionModel.updateOne({ wiki, revId }, { $set: { diffHtml } }).catch(
+        () => {},
+      );
+    }
+  }
+
   // Try to get Lift Wing score (non-blocking failure)
   let liftWing: RevisionResponse["liftWing"] | undefined;
   try {
@@ -53,7 +66,7 @@ revision.get("/:wiki/:revId", async (c) => {
     user: rev.user,
     comment: rev.comment,
     pageId: rev.pageId,
-    diffHtml: rev.diffHtml,
+    diffHtml,
     liftWing,
   };
 

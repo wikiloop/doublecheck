@@ -92,6 +92,38 @@ export async function fetchRecentChanges(
   return { revisions, continueToken };
 }
 
+/** Fetch diff HTML between two revisions from the MediaWiki API */
+export async function fetchDiffFromMW(
+  wiki: string,
+  revId: number,
+  parentRevId: number,
+): Promise<string | null> {
+  const url = new URL(apiUrl(wiki));
+  url.searchParams.set("action", "compare");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  url.searchParams.set("origin", "*");
+
+  if (parentRevId > 0) {
+    url.searchParams.set("fromrev", String(parentRevId));
+  } else {
+    // New page creation: compare against empty content
+    url.searchParams.set("fromslots", "main");
+    url.searchParams.set("fromcontentmodel", "wikitext");
+    url.searchParams.set("fromtext", "");
+  }
+  url.searchParams.set("torev", String(revId));
+
+  try {
+    const res = await fetch(url.toString());
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.compare?.body ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Verify a MediaWiki access token by calling userinfo */
 export async function verifyMWToken(
   accessToken: string,
