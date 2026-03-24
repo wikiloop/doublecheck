@@ -159,6 +159,9 @@ importers:
       '@wikimedia/codex-design-tokens':
         specifier: ^1.14.0
         version: 1.23.0
+      '@wikimedia/codex-icons':
+        specifier: ^2.4.0
+        version: 2.4.0
       vue:
         specifier: ^3.5.0
         version: 3.5.30(typescript@5.9.3)
@@ -971,6 +974,10 @@ packages:
   '@wikimedia/codex-icons@1.23.0':
     resolution: {integrity: sha512-wvdksrpARyHkqNjk2mx7lAjo7lyIpTav92BXSFouj1y5nM6kBT7IGx4vCkl9yGpLrv0PgjrQwLRiM0+umGQH6A==}
     engines: {node: '>=20', npm: '>=10.8.1'}
+
+  '@wikimedia/codex-icons@2.4.0':
+    resolution: {integrity: sha512-BBtrzLR7r9ShxCMYfsx9XaKJu/peqt5Y/jtvWx3E2G5aL/Y/pIWAkv8NIvU+ztKklbHySLH5jSvVZVKxxvU0Ew==}
+    engines: {node: '>=20.19.1', npm: '>=10.8.2'}
 
   '@wikimedia/codex@1.23.0':
     resolution: {integrity: sha512-mqV6BEO3ydgneBt+uN30gvI2nrTFGcKHYTLmY310b3bMMx7o/5UvePteHVtwE99rZP3NgobTtkCdeftYJvANmw==}
@@ -2747,6 +2754,8 @@ snapshots:
   '@wikimedia/codex-design-tokens@1.23.0': {}
 
   '@wikimedia/codex-icons@1.23.0': {}
+
+  '@wikimedia/codex-icons@2.4.0': {}
 
   '@wikimedia/codex@1.23.0(vue@3.5.30(typescript@5.9.3))':
     dependencies:

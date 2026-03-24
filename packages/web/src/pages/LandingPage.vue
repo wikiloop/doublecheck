@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { CdxButton } from "@wikimedia/codex";
+import { CdxButton, CdxIcon } from "@wikimedia/codex";
+import {
+  cdxIconRobot,
+  cdxIconUserGroup,
+  cdxIconArticleSearch,
+  cdxIconGlobe,
+  cdxIconPuzzle,
+  cdxIconCode,
+  cdxIconLinkExternal,
+} from "@wikimedia/codex-icons";
 
 onMounted(() => {
   // SEO: JSON-LD structured data
@@ -37,23 +46,20 @@ onMounted(() => {
         and human judgement.
       </p>
       <div class="dc-hero__cta">
-        <CdxButton
-          action="progressive"
-          weight="primary"
-          size="large"
-          :href="'https://doublecheck.toolforge.org'"
-          class="dc-hero__btn"
+        <router-link
+          to="/review"
+          class="dc-hero__btn-link"
         >
-          Use on Toolforge
-        </CdxButton>
-        <CdxButton
-          weight="normal"
-          size="large"
-          :href="'https://doublecheck.wikiloop.org'"
-          class="dc-hero__btn"
-        >
-          Use on wikiloop.org
-        </CdxButton>
+          <CdxButton
+            action="progressive"
+            weight="primary"
+            size="large"
+            class="dc-hero__btn dc-hero__btn--primary"
+          >
+            <CdxIcon :icon="cdxIconArticleSearch" />
+            Start Reviewing
+          </CdxButton>
+        </router-link>
       </div>
     </section>
 
@@ -61,7 +67,7 @@ onMounted(() => {
     <section class="dc-features">
       <div class="dc-feature">
         <div class="dc-feature__icon">
-          &#128270;
+          <CdxIcon :icon="cdxIconRobot" />
         </div>
         <h3>AI-Assisted Review</h3>
         <p>
@@ -71,7 +77,7 @@ onMounted(() => {
       </div>
       <div class="dc-feature">
         <div class="dc-feature__icon">
-          &#128101;
+          <CdxIcon :icon="cdxIconUserGroup" />
         </div>
         <h3>Community Judgement</h3>
         <p>
@@ -81,7 +87,7 @@ onMounted(() => {
       </div>
       <div class="dc-feature">
         <div class="dc-feature__icon">
-          &#9889;
+          <CdxIcon :icon="cdxIconArticleSearch" />
         </div>
         <h3>Real-Time Feed</h3>
         <p>
@@ -91,7 +97,7 @@ onMounted(() => {
       </div>
       <div class="dc-feature">
         <div class="dc-feature__icon">
-          &#127760;
+          <CdxIcon :icon="cdxIconGlobe" />
         </div>
         <h3>Multi-Wiki Support</h3>
         <p>
@@ -101,163 +107,357 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- Extension links -->
-    <section class="dc-extensions">
-      <h2>Additional Tools</h2>
-      <div class="dc-extensions__links">
+    <!-- Use It -->
+    <section class="dc-use">
+      <h2>Use It</h2>
+      <div class="dc-use__grid">
         <a
-          href="#"
-          class="dc-extension-link"
+          href="https://doublecheck.toolforge.org"
+          class="dc-use__card"
+          target="_blank"
+          rel="noopener"
         >
-          Install UserScript
+          <div class="dc-use__card-icon">
+            <CdxIcon :icon="cdxIconLinkExternal" />
+          </div>
+          <div class="dc-use__card-text">
+            <strong>Use on Toolforge</strong>
+            <span>doublecheck.toolforge.org</span>
+          </div>
         </a>
         <a
-          href="#"
-          class="dc-extension-link"
+          href="https://doublecheck.wikiloop.org"
+          class="dc-use__card"
+          target="_blank"
+          rel="noopener"
         >
-          Chrome Extension
+          <div class="dc-use__card-icon">
+            <CdxIcon :icon="cdxIconGlobe" />
+          </div>
+          <div class="dc-use__card-text">
+            <strong>Use on wikiloop.org</strong>
+            <span>doublecheck.wikiloop.org</span>
+          </div>
+        </a>
+        <a
+          href="https://chromewebstore.google.com/detail/wikiloop-doublecheck/fkflnkemkhbdkbkohankimhejahibfcl"
+          class="dc-use__card"
+          target="_blank"
+          rel="noopener"
+        >
+          <div class="dc-use__card-icon">
+            <CdxIcon :icon="cdxIconPuzzle" />
+          </div>
+          <div class="dc-use__card-text">
+            <strong>Chrome Extension</strong>
+            <span>Install from Chrome Web Store</span>
+          </div>
+        </a>
+        <a
+          href="https://github.com/wikiloop/doublecheck/raw/master/packages/userscript/wikiloop-doublecheck.user.js"
+          class="dc-use__card"
+          target="_blank"
+          rel="noopener"
+        >
+          <div class="dc-use__card-icon">
+            <CdxIcon :icon="cdxIconCode" />
+          </div>
+          <div class="dc-use__card-text">
+            <strong>Install UserScript</strong>
+            <span>For Tampermonkey / Greasemonkey</span>
+          </div>
         </a>
       </div>
     </section>
 
-    <!-- Preview -->
-    <section class="dc-preview">
+    <!-- How It Works -->
+    <section class="dc-how">
       <h2>How It Works</h2>
-      <div class="dc-preview__card">
-        <p>
-          1. A Wikipedia edit appears with its AI risk score.<br>
-          2. You review the diff and judge: <strong>Should Revert</strong>,
-          <strong>Not Sure</strong>, or <strong>Looks Good</strong>.<br>
-          3. Community consensus drives quality across all Wikis.
-        </p>
-        <router-link to="/review">
-          <CdxButton
-            action="progressive"
-            weight="primary"
-          >
-            Start Reviewing
-          </CdxButton>
-        </router-link>
+      <div class="dc-how__steps">
+        <div class="dc-how__step">
+          <div class="dc-how__step-num">
+            1
+          </div>
+          <p>A Wikipedia edit appears with its AI risk score.</p>
+        </div>
+        <div class="dc-how__step">
+          <div class="dc-how__step-num">
+            2
+          </div>
+          <p>
+            You review the diff and judge: <strong>Should Revert</strong>,
+            <strong>Not Sure</strong>, or <strong>Looks Good</strong>.
+          </p>
+        </div>
+        <div class="dc-how__step">
+          <div class="dc-how__step-num">
+            3
+          </div>
+          <p>Community consensus drives quality across all Wikis.</p>
+        </div>
       </div>
+      <router-link
+        to="/review"
+        class="dc-how__cta-link"
+      >
+        <CdxButton
+          action="progressive"
+          weight="primary"
+          size="large"
+        >
+          <CdxIcon :icon="cdxIconArticleSearch" />
+          Start Reviewing
+        </CdxButton>
+      </router-link>
     </section>
   </div>
 </template>
 
 <style scoped>
 .dc-landing {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
+/* Hero */
 .dc-hero {
   text-align: center;
-  padding: 3rem 1rem;
+  padding: 4rem 1rem 3rem;
 }
 
 .dc-hero__logo {
-  height: 80px;
-  margin-bottom: 1rem;
+  height: 96px;
+  margin-bottom: 1.25rem;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
 .dc-hero__title {
-  font-size: 2rem;
-  margin: 0 0 0.5rem;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
 }
 
 .dc-hero__subtitle {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   color: var(--color-subtle);
-  max-width: 600px;
-  margin: 0 auto 1.5rem;
+  max-width: 560px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
 }
 
 .dc-hero__cta {
   display: flex;
-  gap: 1rem;
   justify-content: center;
-  flex-wrap: wrap;
 }
 
+.dc-hero__btn-link {
+  text-decoration: none;
+}
+
+.dc-hero__btn--primary {
+  font-size: 1.1rem;
+  padding: 0.75rem 2rem;
+  gap: 0.5rem;
+}
+
+/* Features */
 .dc-features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  padding: 3rem 0;
+  border-top: 1px solid var(--border-color-subtle);
 }
 
 .dc-feature {
   text-align: center;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.dc-feature:hover {
+  background: var(--background-color-interactive-subtle);
 }
 
 .dc-feature__icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--background-color-progressive-subtle);
+  color: var(--color-progressive);
+  margin-bottom: 1rem;
+}
+
+.dc-feature__icon .cdx-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .dc-feature h3 {
-  margin: 0 0 0.4rem;
-  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .dc-feature p {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--color-subtle);
   margin: 0;
+  line-height: 1.5;
 }
 
-.dc-extensions {
+/* Use It */
+.dc-use {
   text-align: center;
-  padding: 2rem 0;
-  border-top: 1px solid var(--background-color-neutral);
+  padding: 3rem 0;
+  border-top: 1px solid var(--border-color-subtle);
 }
 
-.dc-extensions h2 {
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
+.dc-use h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem;
 }
 
-.dc-extensions__links {
-  display: flex;
+.dc-use__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  justify-content: center;
-}
-
-.dc-extension-link {
-  color: var(--color-progressive);
-  text-decoration: none;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--border-color-subtle);
-  border-radius: 4px;
-}
-
-.dc-extension-link:hover {
-  background: var(--background-color-neutral);
-}
-
-.dc-preview {
-  text-align: center;
-  padding: 2rem 0;
-  border-top: 1px solid var(--background-color-neutral);
-}
-
-.dc-preview h2 {
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-}
-
-.dc-preview__card {
-  background: var(--background-color-neutral-subtle);
-  border: 1px solid var(--border-color-subtle);
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: left;
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
 }
 
-.dc-preview__card p {
-  margin: 0 0 1rem;
-  line-height: 1.7;
+.dc-use__card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dc-use__card:hover {
+  border-color: var(--border-color-progressive);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.dc-use__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--background-color-neutral-subtle);
+  color: var(--color-progressive);
+  flex-shrink: 0;
+}
+
+.dc-use__card-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.dc-use__card-text strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.dc-use__card-text span {
+  font-size: 0.8rem;
+  color: var(--color-subtle);
+  margin-top: 0.15rem;
+}
+
+/* How It Works */
+.dc-how {
+  text-align: center;
+  padding: 3rem 0 4rem;
+  border-top: 1px solid var(--border-color-subtle);
+}
+
+.dc-how h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 2rem;
+}
+
+.dc-how__steps {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  max-width: 720px;
+  margin: 0 auto 2rem;
+}
+
+.dc-how__step {
+  flex: 1;
+  text-align: center;
+}
+
+.dc-how__step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-progressive);
+  color: var(--color-inverted);
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.dc-how__step p {
+  font-size: 0.9rem;
+  color: var(--color-subtle);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dc-how__cta-link {
+  text-decoration: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dc-features {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .dc-use__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-how__steps {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .dc-hero__title {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dc-features {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-hero {
+    padding: 2.5rem 0.5rem 2rem;
+  }
 }
 </style>
