@@ -20,6 +20,8 @@ const router = useRouter();
 const { t } = useI18n();
 
 const revision = ref<Revision | null>(null);
+const diffHtml = ref<string>("");
+const diffLoading = ref(false);
 const liftWingScore = ref<LiftWingScore | undefined>();
 const tallies = ref<Record<JudgementAction, number>>({
   ShouldRevert: 0,
@@ -29,6 +31,47 @@ const tallies = ref<Record<JudgementAction, number>>({
 const currentAction = ref<JudgementAction | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
+
+function mwApiUrl(wiki: string): string {
+  if (wiki === "enwiki" || wiki === "en.wikipedia.org") {
+    return "https://en.wikipedia.org/w/api.php";
+  }
+  const match = wiki.match(/^(\w+)wiki$/);
+  if (match) {
+    return `https://${match[1]}.wikipedia.org/w/api.php`;
+  }
+  return `https://${wiki}/w/api.php`;
+}
+
+/** Fetch diff HTML directly from the MediaWiki API in the browser */
+async function fetchDiff(wiki: string, revId: number, parentRevId: number) {
+  diffLoading.value = true;
+  diffHtml.value = "";
+  try {
+    const url = new URL(mwApiUrl(wiki));
+    url.searchParams.set("action", "compare");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("formatversion", "2");
+    url.searchParams.set("origin", "*");
+    if (parentRevId > 0) {
+      url.searchParams.set("fromrev", String(parentRevId));
+    } else {
+      url.searchParams.set("fromslots", "main");
+      url.searchParams.set("fromcontentmodel", "wikitext");
+      url.searchParams.set("fromtext", "");
+    }
+    url.searchParams.set("torev", String(revId));
+    const res = await fetch(url.toString());
+    if (res.ok) {
+      const data = await res.json();
+      diffHtml.value = data?.compare?.body ?? "";
+    }
+  } catch {
+    // MediaWiki API unavailable
+  } finally {
+    diffLoading.value = false;
+  }
+}
 
 async function loadRevision(wiki?: string, revId?: string | number) {
   loading.value = true;
@@ -40,6 +83,8 @@ async function loadRevision(wiki?: string, revId?: string | number) {
         const data: RevisionResponse = await res.json();
         revision.value = data;
         liftWingScore.value = data.liftWing;
+        // Fetch diff directly from MediaWiki (don't wait — load in parallel)
+        fetchDiff(wiki, Number(revId), data.parentRevId ?? 0);
         await loadJudgements(wiki, Number(revId));
       }
     } else {
@@ -51,6 +96,7 @@ async function loadRevision(wiki?: string, revId?: string | number) {
           const item = data.items[0];
           revision.value = item;
           router.replace(`/review/${item.wiki}/${item.revId}`);
+          fetchDiff(item.wiki, item.revId, item.parentRevId ?? 0);
           await loadJudgements(item.wiki, item.revId);
         }
       }
@@ -152,8 +198,8 @@ watch(
       />
 
       <DiffBox
-        :diff-html="revision.diffHtml ?? ''"
-        :loading="false"
+        :diff-html="diffHtml"
+        :loading="diffLoading"
         class="dc-review-page__diff"
       />
 

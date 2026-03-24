@@ -16,7 +16,12 @@ revision.get("/:wiki/:revId", async (c) => {
   }
 
   // Try DB first
-  let rev = (await RevisionModel.findOne({ wiki, revId }).lean()) as Revision | null;
+  let rev: Revision | null = null;
+  try {
+    rev = (await RevisionModel.findOne({ wiki, revId }).lean()) as Revision | null;
+  } catch {
+    // DB may not be connected — fall through to MW API
+  }
 
   // If not in DB, fetch from MediaWiki API
   if (!rev) {
@@ -30,9 +35,8 @@ revision.get("/:wiki/:revId", async (c) => {
       const created = await RevisionModel.create(fetched);
       rev = created.toObject() as unknown as Revision;
     } catch {
-      // If duplicate key error (race condition), re-fetch from DB
-      rev = (await RevisionModel.findOne({ wiki, revId }).lean()) as Revision | null;
-      if (!rev) return c.json({ error: "Revision not found" }, 404);
+      // DB not available or duplicate key — use fetched data directly
+      rev = fetched;
     }
   }
 
