@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
   "name": "WikiLoop DoubleCheck",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Crowdsourced vandalism review for Wikipedia",
-  "permissions": ["activeTab", "storage"],
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
   "host_permissions": [
     "https://*.wikipedia.org/*",
     "https://wikiloop-doublecheck.toolforge.org/*"
@@ -33,8 +36,12 @@
         "https://*.wikipedia.org/wiki/Special:RecentChanges*",
         "https://*.wikipedia.org/wiki/Special:Watchlist*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ]
     }
   ]
 }
