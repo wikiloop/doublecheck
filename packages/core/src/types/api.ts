@@ -15,6 +15,7 @@ export const API_PATHS = {
   health: "/api/health",
   revision: "/api/revision/:wiki/:revId",
   feed: "/api/feed/:feedName",
+  rankedFeed: "/api/feed/ranked",
   judgement: "/api/judgement",
   judgements: "/api/judgements/:wiki/:revId",
   leaderboard: "/api/leaderboard",
@@ -48,6 +49,15 @@ export type RevisionResponse = Revision & {
 export interface FeedResponse {
   items: Revision[];
   nextCursor?: string;
+}
+
+/** GET /api/feed/ranked */
+export interface RankedFeedResponse {
+  items: import("./models.js").ScoredRevision[];
+  /** Opaque cursor to continue fetching from MediaWiki */
+  nextCursor?: string;
+  /** How many revisions were fetched before scoring/filtering */
+  batchSize: number;
 }
 
 /** POST /api/judgement — request body */

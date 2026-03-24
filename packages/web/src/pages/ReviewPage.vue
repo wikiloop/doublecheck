@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type {
@@ -8,6 +8,8 @@ import type {
   JudgementAction,
   RevisionResponse,
   JudgementsResponse,
+  ScoredRevision,
+  RankedFeedResponse,
 } from "@doublecheck/core";
 import { CdxButton } from "@wikimedia/codex";
 import RevisionCard from "../components/RevisionCard.vue";
@@ -15,6 +17,8 @@ import DiffBox from "../components/DiffBox.vue";
 import ActionPanel from "../components/ActionPanel.vue";
 import JudgementPanel from "../components/JudgementPanel.vue";
 import DirectRevertPanel from "../components/DirectRevertPanel.vue";
+
+const REVIEWS_PER_BATCH = 25;
 
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +37,18 @@ const currentAction = ref<JudgementAction | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
 
+// Ranked feed pool state
+const rankedPool = ref<ScoredRevision[]>([]);
+const reviewedIds = ref<Set<string>>(new Set());
+const reviewedSinceBatch = ref(0);
+const nextCursor = ref<string | undefined>();
+const poolLoading = ref(false);
+const selectedWiki = ref("enwiki");
+
+const poolRemaining = computed(() =>
+  rankedPool.value.filter((r) => !reviewedIds.value.has(`${r.wiki}:${r.revId}`))
+);
+
 function mwApiUrl(wiki: string): string {
   if (wiki === "enwiki" || wiki === "en.wikipedia.org") {
     return "https://en.wikipedia.org/w/api.php";
@@ -44,7 +60,6 @@ function mwApiUrl(wiki: string): string {
   return `https://${wiki}/w/api.php`;
 }
 
-/** Fetch diff HTML directly from the MediaWiki API in the browser */
 async function fetchDiff(wiki: string, revId: number, parentRevId: number) {
   diffLoading.value = true;
   diffHtml.value = "";
@@ -74,6 +89,37 @@ async function fetchDiff(wiki: string, revId: number, parentRevId: number) {
   }
 }
 
+/** Fetch a ranked batch from the server */
+async function fetchRankedBatch() {
+  poolLoading.value = true;
+  try {
+    const params = new URLSearchParams();
+    params.set("wiki", selectedWiki.value);
+    if (nextCursor.value) params.set("cursor", nextCursor.value);
+
+    const res = await fetch(`/api/feed/ranked?${params}`);
+    if (!res.ok) return;
+    const data: RankedFeedResponse = await res.json();
+
+    // Merge new items with unreviewed remaining from current pool
+    const remaining = poolRemaining.value;
+    const existingKeys = new Set(remaining.map((r) => `${r.wiki}:${r.revId}`));
+    const newItems = data.items.filter((r) => !existingKeys.has(`${r.wiki}:${r.revId}`));
+    const merged = [...remaining, ...newItems];
+
+    // Re-rank the merged set
+    merged.sort((a, b) => b.rankScore - a.rankScore);
+
+    rankedPool.value = merged;
+    nextCursor.value = data.nextCursor;
+    reviewedSinceBatch.value = 0;
+  } catch {
+    // API not available
+  } finally {
+    poolLoading.value = false;
+  }
+}
+
 async function loadRevision(wiki?: string, revId?: string | number) {
   loading.value = true;
   currentAction.value = null;
@@ -84,29 +130,37 @@ async function loadRevision(wiki?: string, revId?: string | number) {
         const data: RevisionResponse = await res.json();
         revision.value = data;
         liftWingScore.value = data.liftWing;
-        // Fetch diff directly from MediaWiki (don't wait — load in parallel)
         fetchDiff(wiki, Number(revId), data.parentRevId ?? 0);
         await loadJudgements(wiki, Number(revId));
       }
     } else {
-      // Load next from default feed
-      const res = await fetch("/api/feed/default");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.items?.length > 0) {
-          const item = data.items[0];
-          revision.value = item;
-          router.replace(`/review/${item.wiki}/${item.revId}`);
-          fetchDiff(item.wiki, item.revId, item.parentRevId ?? 0);
-          await loadJudgements(item.wiki, item.revId);
-        }
-      }
+      // No specific revision — load from ranked pool
+      await ensurePool();
+      loadNextFromPool();
     }
   } catch {
     // API not available yet
   } finally {
     loading.value = false;
   }
+}
+
+async function ensurePool() {
+  if (rankedPool.value.length === 0 || poolRemaining.value.length === 0) {
+    await fetchRankedBatch();
+  }
+}
+
+function loadNextFromPool() {
+  const remaining = poolRemaining.value;
+  if (remaining.length === 0) return;
+
+  const next = remaining[0];
+  revision.value = next;
+  liftWingScore.value = next.liftWing;
+  router.replace(`/review/${next.wiki}/${next.revId}`);
+  fetchDiff(next.wiki, next.revId, next.parentRevId ?? 0);
+  loadJudgements(next.wiki, next.revId);
 }
 
 async function loadJudgements(wiki: string, revId: number) {
@@ -136,8 +190,11 @@ async function onJudge(action: JudgementAction) {
         action,
       }),
     });
-    // Refresh tallies
     await loadJudgements(revision.value.wiki, revision.value.revId);
+
+    // Track this revision as reviewed
+    reviewedIds.value.add(`${revision.value.wiki}:${revision.value.revId}`);
+    reviewedSinceBatch.value++;
   } catch {
     // ignore
   } finally {
@@ -146,24 +203,18 @@ async function onJudge(action: JudgementAction) {
 }
 
 async function loadNext() {
-  const feedName = "default";
-  try {
-    const res = await fetch(`/api/feed/${feedName}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.items?.length > 0) {
-        const item = data.items[0];
-        router.push(`/review/${item.wiki}/${item.revId}`);
-      }
-    }
-  } catch {
-    // ignore
+  // If user has reviewed 25 since last batch, fetch a new batch
+  if (reviewedSinceBatch.value >= REVIEWS_PER_BATCH || poolRemaining.value.length === 0) {
+    await fetchRankedBatch();
   }
+
+  loadNextFromPool();
 }
 
 onMounted(() => {
   const wiki = route.params.wiki as string | undefined;
   const revId = route.params.revId as string | undefined;
+  if (wiki) selectedWiki.value = wiki;
   loadRevision(wiki, revId);
 });
 
@@ -185,13 +236,19 @@ watch(
     >
 
     <div
-      v-if="loading"
+      v-if="loading || poolLoading"
       class="dc-review-page__loading"
     >
-      {{ t("Label-Loading") }}...
+      {{ poolLoading ? 'Scoring & ranking revisions...' : t("Label-Loading") }}...
     </div>
 
     <template v-else-if="revision">
+      <div class="dc-review-page__pool-status">
+        <span>{{ poolRemaining.length }} ranked revisions remaining</span>
+        <span>&middot;</span>
+        <span>{{ reviewedSinceBatch }} / {{ REVIEWS_PER_BATCH }} reviewed this batch</span>
+      </div>
+
       <RevisionCard
         :revision="revision"
         :lift-wing-score="liftWingScore"
@@ -266,6 +323,15 @@ watch(
   text-align: center;
   padding: 3rem 1rem;
   color: var(--color-subtle);
+}
+
+.dc-review-page__pool-status {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--color-subtle);
+  padding: 0.25rem 0;
 }
 
 .dc-review-page__diff {

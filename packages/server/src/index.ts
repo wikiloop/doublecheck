@@ -18,6 +18,7 @@ import { liftwing } from "./routes/liftwing.js";
 import { auth } from "./routes/auth.js";
 import { events } from "./routes/events.js";
 import { revert } from "./routes/revert.js";
+import { rankedFeed } from "./routes/rankedFeed.js";
 
 /** Create a Hono app with API routes only (no static file serving). */
 export function createApiApp(): Hono {
@@ -45,6 +46,7 @@ export function createApiApp(): Hono {
 
   // API routes
   app.route("/api/revision", revision);
+  app.route("/api/feed/ranked", rankedFeed);
   app.route("/api/feed", feed);
   app.route("/api/judgement", judgement);
   app.route("/api/judgements", judgement);

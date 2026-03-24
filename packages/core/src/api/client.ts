@@ -2,6 +2,7 @@ import type {
   HealthResponse,
   RevisionResponse,
   FeedResponse,
+  RankedFeedResponse,
   JudgementRequest,
   JudgementResponse,
   JudgementsResponse,
@@ -61,6 +62,14 @@ export class ApiClient {
   getFeed(feedName: string, cursor?: string, signal?: AbortSignal): Promise<FeedResponse> {
     const params = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
     return this.request(`/api/feed/${encodeURIComponent(feedName)}${params}`, { signal });
+  }
+
+  getRankedFeed(wiki?: string, cursor?: string, signal?: AbortSignal): Promise<RankedFeedResponse> {
+    const params = new URLSearchParams();
+    if (wiki) params.set("wiki", wiki);
+    if (cursor) params.set("cursor", cursor);
+    const qs = params.toString();
+    return this.request(`/api/feed/ranked${qs ? `?${qs}` : ""}`, { signal });
   }
 
   submitJudgement(req: JudgementRequest, signal?: AbortSignal): Promise<JudgementResponse> {

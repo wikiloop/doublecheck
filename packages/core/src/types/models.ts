@@ -51,6 +51,13 @@ export interface User {
   lastActive: string;
 }
 
+/** A revision with its LiftWing score and computed rank score. */
+export interface ScoredRevision extends Revision {
+  liftWing: LiftWingScore;
+  /** damaging + (1 - goodfaith); higher = more suspicious */
+  rankScore: number;
+}
+
 /** A named review feed (e.g., recent changes for a particular wiki). */
 export interface Feed {
   name: string;
