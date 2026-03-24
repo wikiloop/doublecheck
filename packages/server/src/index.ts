@@ -19,6 +19,7 @@ import { auth } from "./routes/auth.js";
 import { events } from "./routes/events.js";
 import { revert } from "./routes/revert.js";
 import { rankedFeed } from "./routes/rankedFeed.js";
+import { startRevertRiskStream } from "./lib/revertRiskStream.js";
 
 /** Create a Hono app with API routes only (no static file serving). */
 export function createApiApp(): Hono {
@@ -98,6 +99,9 @@ if (isDirectRun) {
     .catch((err) => {
       console.error("MongoDB connection failed (server continues without DB):", err.message ?? err);
     });
+
+  // Start consuming the Wikimedia revert-risk prediction stream
+  startRevertRiskStream();
 
   const port = parseInt(process.env.PORT || "8000", 10);
   console.log(`Listening on port ${port}`);

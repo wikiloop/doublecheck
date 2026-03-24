@@ -5,6 +5,7 @@ import { useI18n } from "vue-i18n";
 import type {
   Revision,
   LiftWingScore,
+  RevertRiskScore,
   JudgementAction,
   RevisionResponse,
   JudgementsResponse,
@@ -27,7 +28,9 @@ const { t } = useI18n();
 const revision = ref<Revision | null>(null);
 const diffHtml = ref<string>("");
 const diffLoading = ref(false);
+const revertRiskScore = ref<RevertRiskScore | undefined>();
 const liftWingScore = ref<LiftWingScore | undefined>();
+const liftWingLoading = ref(false);
 const tallies = ref<Record<JudgementAction, number>>({
   ShouldRevert: 0,
   NotSure: 0,
@@ -89,6 +92,22 @@ async function fetchDiff(wiki: string, revId: number, parentRevId: number) {
   }
 }
 
+/** Lazy-load LiftWing damaging/goodfaith scores for the current revision */
+async function lazyLoadLiftWing(wiki: string, revId: number) {
+  liftWingLoading.value = true;
+  liftWingScore.value = undefined;
+  try {
+    const res = await fetch(`/api/liftwing/${wiki}/${revId}`);
+    if (res.ok) {
+      liftWingScore.value = await res.json();
+    }
+  } catch {
+    // LiftWing unavailable — revert risk is still shown
+  } finally {
+    liftWingLoading.value = false;
+  }
+}
+
 /** Fetch a ranked batch from the server */
 async function fetchRankedBatch() {
   poolLoading.value = true;
@@ -123,6 +142,8 @@ async function fetchRankedBatch() {
 async function loadRevision(wiki?: string, revId?: string | number) {
   loading.value = true;
   currentAction.value = null;
+  revertRiskScore.value = undefined;
+  liftWingScore.value = undefined;
   try {
     if (wiki && revId) {
       const res = await fetch(`/api/revision/${wiki}/${revId}`);
@@ -132,6 +153,10 @@ async function loadRevision(wiki?: string, revId?: string | number) {
         liftWingScore.value = data.liftWing;
         fetchDiff(wiki, Number(revId), data.parentRevId ?? 0);
         await loadJudgements(wiki, Number(revId));
+        // If no LiftWing score came with the revision, lazy-load it
+        if (!data.liftWing) {
+          lazyLoadLiftWing(wiki, Number(revId));
+        }
       }
     } else {
       // No specific revision — load from ranked pool
@@ -157,10 +182,15 @@ function loadNextFromPool() {
 
   const next = remaining[0];
   revision.value = next;
+  revertRiskScore.value = next.revertRisk;
   liftWingScore.value = next.liftWing;
   router.replace(`/review/${next.wiki}/${next.revId}`);
   fetchDiff(next.wiki, next.revId, next.parentRevId ?? 0);
   loadJudgements(next.wiki, next.revId);
+  // Lazy-load detailed damaging/goodfaith scores
+  if (!next.liftWing) {
+    lazyLoadLiftWing(next.wiki, next.revId);
+  }
 }
 
 async function loadJudgements(wiki: string, revId: number) {
@@ -239,7 +269,7 @@ watch(
       v-if="loading || poolLoading"
       class="dc-review-page__loading"
     >
-      {{ poolLoading ? 'Scoring & ranking revisions...' : t("Label-Loading") }}...
+      {{ poolLoading ? 'Loading ranked revisions...' : t("Label-Loading") }}...
     </div>
 
     <template v-else-if="revision">
@@ -251,7 +281,9 @@ watch(
 
       <RevisionCard
         :revision="revision"
+        :revert-risk-score="revertRiskScore"
         :lift-wing-score="liftWingScore"
+        :lift-wing-loading="liftWingLoading"
         :loading="false"
       />
 

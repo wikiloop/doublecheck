@@ -41,21 +41,32 @@ function scoreColor(score: number): string {
       >
         {{ revision.comment }}
       </p>
-      <div
-        v-if="liftWingScore"
-        class="dc-revision-card__scores"
-      >
-        <span>
-          Damaging:
-          <strong :style="{ color: scoreColor(liftWingScore.damaging) }">
-            {{ formatScore(liftWingScore.damaging) }}
+      <div class="dc-revision-card__scores">
+        <span v-if="revertRiskScore">
+          Revert risk:
+          <strong :style="{ color: scoreColor(revertRiskScore.revertRisk) }">
+            {{ formatScore(revertRiskScore.revertRisk) }}
           </strong>
         </span>
-        <span>
-          Good faith:
-          <strong :style="{ color: scoreColor(1 - liftWingScore.goodfaith) }">
-            {{ formatScore(liftWingScore.goodfaith) }}
-          </strong>
+        <template v-if="liftWingScore">
+          <span>
+            Damaging:
+            <strong :style="{ color: scoreColor(liftWingScore.damaging) }">
+              {{ formatScore(liftWingScore.damaging) }}
+            </strong>
+          </span>
+          <span>
+            Good faith:
+            <strong :style="{ color: scoreColor(1 - liftWingScore.goodfaith) }">
+              {{ formatScore(liftWingScore.goodfaith) }}
+            </strong>
+          </span>
+        </template>
+        <span
+          v-else-if="liftWingLoading"
+          class="dc-revision-card__scores-loading"
+        >
+          Loading detail scores...
         </span>
       </div>
     </template>
@@ -114,5 +125,10 @@ function scoreColor(score: number): string {
   gap: 1.5rem;
   margin-top: 0.5rem;
   font-size: 0.85rem;
+}
+
+.dc-revision-card__scores-loading {
+  color: var(--color-placeholder);
+  font-style: italic;
 }
 </style>

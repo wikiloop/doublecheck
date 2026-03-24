@@ -48,28 +48,49 @@ function pct(value: number): string {
         {{ props.revision.comment }}
       </p>
       <div
-        v-if="props.liftWingScore"
+        v-if="props.revertRiskScore || props.liftWingScore || props.liftWingLoading"
         class="dc-revision-card__scores"
       >
-        <div class="dc-score">
-          <label class="dc-score__label">Damaging</label>
+        <div
+          v-if="props.revertRiskScore"
+          class="dc-score"
+        >
+          <label class="dc-score__label">Revert risk</label>
           <div class="dc-score__bar">
             <div
-              class="dc-score__fill dc-score__fill--damaging"
-              :style="{ width: pct(props.liftWingScore.damaging) }"
+              class="dc-score__fill dc-score__fill--revert-risk"
+              :style="{ width: pct(props.revertRiskScore.revertRisk) }"
             />
           </div>
-          <span class="dc-score__value">{{ pct(props.liftWingScore.damaging) }}</span>
+          <span class="dc-score__value">{{ pct(props.revertRiskScore.revertRisk) }}</span>
         </div>
-        <div class="dc-score">
-          <label class="dc-score__label">Good faith</label>
-          <div class="dc-score__bar">
-            <div
-              class="dc-score__fill dc-score__fill--goodfaith"
-              :style="{ width: pct(props.liftWingScore.goodfaith) }"
-            />
+        <template v-if="props.liftWingScore">
+          <div class="dc-score">
+            <label class="dc-score__label">Damaging</label>
+            <div class="dc-score__bar">
+              <div
+                class="dc-score__fill dc-score__fill--damaging"
+                :style="{ width: pct(props.liftWingScore.damaging) }"
+              />
+            </div>
+            <span class="dc-score__value">{{ pct(props.liftWingScore.damaging) }}</span>
           </div>
-          <span class="dc-score__value">{{ pct(props.liftWingScore.goodfaith) }}</span>
+          <div class="dc-score">
+            <label class="dc-score__label">Good faith</label>
+            <div class="dc-score__bar">
+              <div
+                class="dc-score__fill dc-score__fill--goodfaith"
+                :style="{ width: pct(props.liftWingScore.goodfaith) }"
+              />
+            </div>
+            <span class="dc-score__value">{{ pct(props.liftWingScore.goodfaith) }}</span>
+          </div>
+        </template>
+        <div
+          v-else-if="props.liftWingLoading"
+          class="dc-score dc-score--loading"
+        >
+          <div class="dc-skeleton-line dc-skeleton-line--wide" />
         </div>
       </div>
     </template>
@@ -148,6 +169,10 @@ function pct(value: number): string {
   height: 100%;
   border-radius: 4px;
   transition: width 0.3s;
+}
+
+.dc-score__fill--revert-risk {
+  background: var(--dc-color-revert-risk, #f0a);
 }
 
 .dc-score__fill--damaging {

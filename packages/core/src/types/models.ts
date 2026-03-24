@@ -33,6 +33,13 @@ export interface LiftWingScore {
   modelVersion?: string;
 }
 
+/** Revert-risk prediction from the Wikimedia EventStreams pipeline. */
+export interface RevertRiskScore {
+  revertRisk: number; // probability of being reverted (0-1)
+  modelName?: string;
+  modelVersion?: string;
+}
+
 /** A single judgement submitted by a reviewer for a revision. */
 export interface Judgement {
   revisionWiki: string;
@@ -51,10 +58,12 @@ export interface User {
   lastActive: string;
 }
 
-/** A revision with its LiftWing score and computed rank score. */
+/** A revision with revert-risk score (primary) and optional LiftWing detail scores. */
 export interface ScoredRevision extends Revision {
-  liftWing: LiftWingScore;
-  /** damaging + (1 - goodfaith); higher = more suspicious */
+  revertRisk: RevertRiskScore;
+  /** LiftWing damaging/goodfaith detail — lazy-loaded on the client */
+  liftWing?: LiftWingScore;
+  /** revertRisk.revertRisk; higher = more suspicious */
   rankScore: number;
 }
 

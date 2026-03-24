@@ -1,72 +1,22 @@
 import { Hono } from "hono";
-import type { RankedFeedResponse, ScoredRevision } from "@doublecheck/core";
-import { RevisionModel } from "../db/models/index.js";
-import { fetchRecentChanges } from "../lib/mediawiki.js";
-import { fetchLiftWingScore } from "../lib/liftWingCache.js";
-import type { Revision } from "@doublecheck/core";
+import type { RankedFeedResponse } from "@doublecheck/core";
+import { getBufferedRevisions, getBufferSize } from "../lib/revertRiskStream.js";
 
-const BATCH_SIZE = parseInt(process.env.RANKED_FEED_BATCH_SIZE ?? "250", 10);
-const CONCURRENCY = 10; // max parallel LiftWing requests
+const BATCH_SIZE = parseInt(process.env.RANKED_FEED_BATCH_SIZE ?? "50", 10);
 
 const rankedFeed = new Hono();
 
-/** Score revisions via LiftWing with concurrency limit, skip failures */
-async function scoreRevisions(revisions: Revision[]): Promise<ScoredRevision[]> {
-  const scored: ScoredRevision[] = [];
-  const queue = [...revisions];
-
-  async function worker() {
-    while (queue.length > 0) {
-      const rev = queue.shift()!;
-      try {
-        const lw = await fetchLiftWingScore(rev.wiki, rev.revId);
-        scored.push({
-          ...rev,
-          liftWing: lw,
-          rankScore: lw.damaging + (1 - lw.goodfaith),
-        });
-      } catch {
-        // LiftWing failed for this revision — skip it
-      }
-    }
-  }
-
-  const workers = Array.from({ length: Math.min(CONCURRENCY, revisions.length) }, () => worker());
-  await Promise.all(workers);
-
-  return scored;
-}
-
-/** GET /api/feed/ranked?wiki=enwiki&cursor=X */
+/** GET /api/feed/ranked?wiki=enwiki&cursor=0 */
 rankedFeed.get("/", async (c) => {
   const wiki = c.req.query("wiki") ?? "enwiki";
-  const cursor = c.req.query("cursor") ?? undefined;
+  const offset = parseInt(c.req.query("cursor") ?? "0", 10) || 0;
 
-  // Fetch a large batch of recent changes
-  const { revisions, continueToken } = await fetchRecentChanges(wiki, BATCH_SIZE, cursor);
+  const { items, total } = getBufferedRevisions(wiki, BATCH_SIZE, offset);
 
-  // Store revisions in DB (fire-and-forget)
-  if (revisions.length > 0) {
-    RevisionModel.bulkWrite(
-      revisions.map((rev) => ({
-        updateOne: {
-          filter: { wiki: rev.wiki, revId: rev.revId },
-          update: { $setOnInsert: rev },
-          upsert: true,
-        },
-      })),
-    ).catch(() => {});
-  }
-
-  // Score all revisions via LiftWing (with concurrency limit)
-  const scored = await scoreRevisions(revisions);
-
-  // Rank: highest rankScore first (most suspicious)
-  scored.sort((a, b) => b.rankScore - a.rankScore);
-
+  const nextOffset = offset + items.length;
   const response: RankedFeedResponse = {
-    items: scored,
-    nextCursor: continueToken,
+    items,
+    nextCursor: nextOffset < total ? String(nextOffset) : undefined,
     batchSize: BATCH_SIZE,
   };
 

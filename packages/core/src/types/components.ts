@@ -3,13 +3,16 @@
 import type {
   JudgementAction,
   LiftWingScore,
+  RevertRiskScore,
   Revision,
 } from "./models.js";
 
 /** Props for the RevisionCard component. */
 export interface RevisionCardProps {
   revision: Revision;
+  revertRiskScore?: RevertRiskScore;
   liftWingScore?: LiftWingScore;
+  liftWingLoading?: boolean;
   loading?: boolean;
 }
 

@@ -56,6 +56,14 @@ vi.mock("../lib/liftWingCache.js", () => ({
   _clearCache: vi.fn(),
 }));
 
+vi.mock("../lib/revertRiskStream.js", () => ({
+  startRevertRiskStream: vi.fn(),
+  stopRevertRiskStream: vi.fn(),
+  getBufferedRevisions: vi.fn().mockReturnValue({ items: [], total: 0 }),
+  getBufferSize: vi.fn().mockReturnValue(0),
+  _clearBuffers: vi.fn(),
+}));
+
 // Import mocked modules for test setup
 import {
   RevisionModel,
