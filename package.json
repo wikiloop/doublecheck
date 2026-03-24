@@ -19,7 +19,10 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --parallel run typecheck",
     "test": "pnpm -r --parallel run test",
-    "validate:phase0": "pnpm --filter @doublecheck/server validate:phase0"
+    "validate:phase0": "pnpm --filter @doublecheck/server validate:phase0",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:vercel": "bash scripts/deploy.sh vercel",
+    "deploy:toolforge": "bash scripts/deploy.sh toolforge"
   },
   "dependencies": {
     "@hono/node-server": "^1.0.0",
