@@ -3,6 +3,8 @@ import type { MiddlewareHandler } from "hono";
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https?:\/\/.*\.wikipedia\.org$/,
   /^https?:\/\/localhost(:\d+)?$/,
+  /^https?:\/\/.*\.wikiloop\.org$/,
+  /^https?:\/\/.*\.toolforge\.org$/,
   /^chrome-extension:\/\//,
   /^moz-extension:\/\//,
 ];

@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import type {
   AuthMeResponse,
   AuthMeUnauthenticatedResponse,
@@ -24,6 +24,13 @@ function generateState(): string {
     .join("");
 }
 
+/** Build the public-facing origin, respecting reverse-proxy headers. */
+function getPublicOrigin(c: Context): string {
+  const proto = c.req.header("x-forwarded-proto") ?? "http";
+  const host = c.req.header("x-forwarded-host") ?? c.req.header("host") ?? "localhost";
+  return `${proto}://${host}`;
+}
+
 /** GET /api/auth/login */
 auth.get("/login", (c) => {
   const returnTo = c.req.query("returnTo") ?? "/";
@@ -42,7 +49,7 @@ auth.get("/login", (c) => {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
-    redirect_uri: `${c.req.url.split("/api/auth")[0]}/api/auth/callback`,
+    redirect_uri: `${getPublicOrigin(c)}/api/auth/callback`,
     state,
   });
 
@@ -83,7 +90,7 @@ auth.get("/callback", async (c) => {
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: `${c.req.url.split("/api/auth")[0]}/api/auth/callback`,
+        redirect_uri: `${getPublicOrigin(c)}/api/auth/callback`,
       }).toString(),
     },
   );

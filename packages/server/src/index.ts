@@ -18,7 +18,8 @@ import { liftwing } from "./routes/liftwing.js";
 import { auth } from "./routes/auth.js";
 import { events } from "./routes/events.js";
 
-export function createApp(): Hono {
+/** Create a Hono app with API routes only (no static file serving). */
+export function createApiApp(): Hono {
   const app = new Hono();
 
   // Global middleware
@@ -50,6 +51,13 @@ export function createApp(): Hono {
   app.route("/api/liftwing", liftwing);
   app.route("/api/auth", auth);
   app.route("/api/events", events);
+
+  return app;
+}
+
+/** Create a full Hono app with API routes + static file serving (for standalone server). */
+export function createApp(): Hono {
+  const app = createApiApp();
 
   // Serve userscript for direct installation
   app.use(
