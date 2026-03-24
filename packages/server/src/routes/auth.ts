@@ -49,7 +49,7 @@ auth.get("/login", (c) => {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
-    redirect_uri: `${getPublicOrigin(c)}/api/auth/callback`,
+    redirect_uri: `${getPublicOrigin(c)}/auth/callback`,
     state,
   });
 
@@ -90,7 +90,7 @@ auth.get("/callback", async (c) => {
         code,
         client_id: clientId,
         client_secret: clientSecret,
-        redirect_uri: `${getPublicOrigin(c)}/api/auth/callback`,
+        redirect_uri: `${getPublicOrigin(c)}/auth/callback`,
       }).toString(),
     },
   );

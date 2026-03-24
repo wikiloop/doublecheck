@@ -52,6 +52,7 @@ export function createApiApp(): Hono {
   app.route("/api/user", userHistory);
   app.route("/api/liftwing", liftwing);
   app.route("/api/auth", auth);
+  app.route("/auth", auth); // OAuth callback registered at /auth/callback
   app.route("/api/events", events);
   app.route("/api/revert", revert);
 
