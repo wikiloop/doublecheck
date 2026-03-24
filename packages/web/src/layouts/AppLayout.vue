@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { CdxButton } from "@wikimedia/codex";
 import { useAuth } from "../composables/useAuth";
 
 const { t } = useI18n();
@@ -50,20 +51,21 @@ const { user, isLoggedIn, login, logout } = useAuth();
         <div class="dc-auth">
           <template v-if="isLoggedIn && user">
             <span class="dc-username">{{ user.username }}</span>
-            <button
-              class="dc-btn dc-btn--text"
+            <CdxButton
+              weight="quiet"
               @click="logout()"
             >
               {{ t("Label-Logout") }}
-            </button>
+            </CdxButton>
           </template>
           <template v-else>
-            <button
-              class="dc-btn dc-btn--primary"
+            <CdxButton
+              action="progressive"
+              weight="primary"
               @click="login()"
             >
               {{ t("Label-Login") }}
-            </button>
+            </CdxButton>
           </template>
         </div>
       </div>
@@ -90,6 +92,12 @@ const { user, isLoggedIn, login, logout } = useAuth();
         >
           Meta-Wiki
         </a>
+        <router-link to="/tos">
+          Terms of Service
+        </router-link>
+        <router-link to="/privacy">
+          Privacy Policy
+        </router-link>
       </div>
     </footer>
   </div>
@@ -103,8 +111,8 @@ const { user, isLoggedIn, login, logout } = useAuth();
 }
 
 .dc-header {
-  background: #fff;
-  border-bottom: 1px solid #c8ccd1;
+  background: var(--background-color-base);
+  border-bottom: 1px solid var(--border-color-subtle);
   padding: 0 1rem;
   position: sticky;
   top: 0;
@@ -139,17 +147,17 @@ const { user, isLoggedIn, login, logout } = useAuth();
 .dc-nav-link {
   padding: 0.5rem 0.75rem;
   text-decoration: none;
-  color: #202122;
+  color: var(--color-base);
   border-radius: 4px;
   font-size: 0.9rem;
 }
 
 .dc-nav-link:hover {
-  background: #eaecf0;
+  background: var(--background-color-neutral);
 }
 
 .dc-nav-link.router-link-active {
-  color: #3366cc;
+  color: var(--color-progressive);
   font-weight: 600;
 }
 
@@ -161,33 +169,7 @@ const { user, isLoggedIn, login, logout } = useAuth();
 
 .dc-username {
   font-size: 0.9rem;
-  color: #54595d;
-}
-
-.dc-btn {
-  border: none;
-  border-radius: 4px;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-
-.dc-btn--primary {
-  background: #3366cc;
-  color: #fff;
-}
-
-.dc-btn--primary:hover {
-  background: #2a4b8d;
-}
-
-.dc-btn--text {
-  background: transparent;
-  color: #3366cc;
-}
-
-.dc-btn--text:hover {
-  background: #eaecf0;
+  color: var(--color-subtle);
 }
 
 .dc-main {
@@ -199,9 +181,9 @@ const { user, isLoggedIn, login, logout } = useAuth();
 }
 
 .dc-footer {
-  border-top: 1px solid #c8ccd1;
+  border-top: 1px solid var(--border-color-subtle);
   padding: 1rem;
-  background: #f8f9fa;
+  background: var(--background-color-neutral-subtle);
 }
 
 .dc-footer-inner {
@@ -210,11 +192,11 @@ const { user, isLoggedIn, login, logout } = useAuth();
   display: flex;
   gap: 1.5rem;
   font-size: 0.85rem;
-  color: #54595d;
+  color: var(--color-subtle);
 }
 
 .dc-footer-inner a {
-  color: #3366cc;
+  color: var(--color-progressive);
   text-decoration: none;
 }
 
