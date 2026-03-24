@@ -84,23 +84,31 @@ judgement.get("/:wiki/:revId", async (c) => {
     return c.json({ error: "Invalid revId" }, 400);
   }
 
+  // Query both v5 fields and legacy wikiRevId format ("wiki:revId")
+  const legacyWikiRevId = `${wiki}:${revId}`;
   const interactions = await InteractionModel.find({
-    revisionWiki: wiki,
-    revisionId: revId,
+    $or: [
+      { revisionWiki: wiki, revisionId: revId },
+      { wikiRevId: legacyWikiRevId },
+    ],
   })
     .sort({ createdAt: -1 })
     .lean();
 
   const judgements = interactions.map((doc: Record<string, unknown>) => ({
-    revisionWiki: doc.revisionWiki as string,
-    revisionId: doc.revisionId as number,
-    action: doc.action as JudgementAction,
-    userId: doc.userId as string,
-    identity: doc.identity as JudgementResponse["identity"],
+    revisionWiki: (doc.revisionWiki as string) ?? wiki,
+    revisionId: (doc.revisionId as number) ?? revId,
+    action: ((doc.action ?? doc.judgement) as JudgementAction),
+    userId: ((doc.userId ?? doc.wikiUserName ?? doc.userGaId) as string) ?? "anonymous",
+    identity: (doc.identity as JudgementResponse["identity"]) ?? {
+      type: "anon" as const,
+      username: (doc.wikiUserName as string) ?? null,
+      verified: false,
+    },
     timestamp:
       (doc.createdAt as Date)?.toISOString?.() ??
       (doc.createdAt as string) ??
-      "",
+      (doc.timestamp ? new Date((doc.timestamp as number) * 1000).toISOString() : ""),
   }));
 
   // Calculate tallies

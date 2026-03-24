@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { LeaderboardResponse } from "@doublecheck/core";
-import { InteractionModel, UserModel } from "../db/models/index.js";
+import { InteractionModel } from "../db/models/index.js";
 
 const leaderboard = new Hono();
 
@@ -19,16 +19,36 @@ leaderboard.get("/", async (c) => {
   else if (period === "month")
     dateFilter = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Aggregate judgement counts per user
+  // Aggregate judgement counts per user.
+  // Supports both legacy docs (wikiUserName, timestamp) and v5 docs (userId, createdAt).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pipeline: any[] = [];
+
+  // Normalize: pick whichever user/time field exists
+  pipeline.push({
+    $addFields: {
+      _user: { $ifNull: ["$userId", "$wikiUserName"] },
+      _time: {
+        $ifNull: [
+          "$createdAt",
+          // Legacy timestamp is Unix seconds — convert to Date
+          { $cond: { if: "$timestamp", then: { $toDate: { $multiply: ["$timestamp", 1000] } }, else: null } },
+        ],
+      },
+    },
+  });
+
+  // Exclude anonymous / empty users
+  pipeline.push({ $match: { _user: { $nin: [null, "", "anonymous"] } } });
+
   if (dateFilter) {
-    pipeline.push({ $match: { createdAt: { $gte: dateFilter } } });
+    pipeline.push({ $match: { _time: { $gte: dateFilter } } });
   }
+
   pipeline.push(
     {
       $group: {
-        _id: "$userId",
+        _id: "$_user",
         count: { $sum: 1 },
       },
     },
@@ -38,22 +58,10 @@ leaderboard.get("/", async (c) => {
 
   const results = await InteractionModel.aggregate(pipeline);
 
-  // Look up usernames
-  const userIds = results.map((r: { _id: string }) => r._id);
-  const users = await UserModel.find({
-    wikiUserName: { $in: userIds },
-  }).lean();
-  const userMap = new Map(
-    users.map((u: Record<string, unknown>) => [
-      u.wikiUserName as string,
-      u.wikiUserName as string,
-    ]),
-  );
-
   const entries = results.map(
     (r: { _id: string; count: number }, index: number) => ({
       userId: r._id,
-      username: userMap.get(r._id) ?? r._id,
+      username: r._id,
       count: r.count,
       rank: index + 1,
     }),
