@@ -140,7 +140,7 @@ onMounted(() => {
           </div>
         </a>
         <a
-          href="https://chromewebstore.google.com/detail/wikiloop-doublecheck/fkflnkemkhbdkbkohankimhejahibfcl"
+          href="https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn"
           class="dc-use__card"
           target="_blank"
           rel="noopener"
