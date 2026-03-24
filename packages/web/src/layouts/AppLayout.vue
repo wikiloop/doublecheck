@@ -3,8 +3,13 @@ import { useI18n } from "vue-i18n";
 import { CdxButton } from "@wikimedia/codex";
 import { useAuth } from "../composables/useAuth";
 
+declare const __APP_VERSION__: string;
+declare const __GIT_HASH__: string;
+
 const { t } = useI18n();
 const { user, isLoggedIn, login, logout } = useAuth();
+const appVersion = __APP_VERSION__;
+const gitHash = __GIT_HASH__;
 </script>
 
 <template>
@@ -95,6 +100,7 @@ const { user, isLoggedIn, login, logout } = useAuth();
         <router-link to="/tos">
           Terms &amp; Privacy
         </router-link>
+        <span class="dc-footer-version">v{{ appVersion }} ({{ gitHash }})</span>
       </div>
     </footer>
   </div>
@@ -195,6 +201,13 @@ const { user, isLoggedIn, login, logout } = useAuth();
 .dc-footer-inner a {
   color: var(--color-progressive);
   text-decoration: none;
+}
+
+.dc-footer-version {
+  margin-left: auto;
+  opacity: 0.6;
+  font-family: monospace;
+  font-size: 0.75rem;
 }
 
 @media (max-width: 600px) {
