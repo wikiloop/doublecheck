@@ -11,6 +11,9 @@ importers:
       '@doublecheck/core':
         specifier: workspace:*
         version: link:packages/core
+      '@hono/node-server':
+        specifier: ^1.0.0
+        version: 1.19.11(hono@4.12.9)
       hono:
         specifier: ^4.0.0
         version: 4.12.9

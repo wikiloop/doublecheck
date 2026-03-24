@@ -1,8 +1,6 @@
-import { handle } from "hono/vercel";
+import { handle } from "@hono/node-server/vercel";
 import { createApiApp } from "../packages/server/src/index.js";
 import { connectDB } from "../packages/server/src/db/connection.js";
-
-export const config = { runtime: "nodejs" };
 
 const app = createApiApp();
 

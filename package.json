@@ -22,6 +22,7 @@
     "validate:phase0": "pnpm --filter @doublecheck/server validate:phase0"
   },
   "dependencies": {
+    "@hono/node-server": "^1.0.0",
     "hono": "^4.0.0",
     "mongoose": "^8.0.0",
     "@doublecheck/core": "workspace:*"
