@@ -39,8 +39,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: "/privacy",
-    name: "privacy",
-    component: () => import("../pages/PrivacyPage.vue"),
+    redirect: "/tos#privacy",
   },
 ];
 

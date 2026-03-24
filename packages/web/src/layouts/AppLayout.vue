@@ -93,10 +93,7 @@ const { user, isLoggedIn, login, logout } = useAuth();
           Meta-Wiki
         </a>
         <router-link to="/tos">
-          Terms of Service
-        </router-link>
-        <router-link to="/privacy">
-          Privacy Policy
+          Terms &amp; Privacy
         </router-link>
       </div>
     </footer>
