@@ -17,6 +17,7 @@ import { userHistory } from "./routes/userHistory.js";
 import { liftwing } from "./routes/liftwing.js";
 import { auth } from "./routes/auth.js";
 import { events } from "./routes/events.js";
+import { revert } from "./routes/revert.js";
 
 /** Create a Hono app with API routes only (no static file serving). */
 export function createApiApp(): Hono {
@@ -29,6 +30,7 @@ export function createApiApp(): Hono {
 
   // Rate limiting: writes (POST) get stricter limits
   app.use("/api/judgement", writeLimiter);
+  app.use("/api/revert", writeLimiter);
   app.use("/api/*", readLimiter);
 
   // Health check
@@ -51,6 +53,7 @@ export function createApiApp(): Hono {
   app.route("/api/liftwing", liftwing);
   app.route("/api/auth", auth);
   app.route("/api/events", events);
+  app.route("/api/revert", revert);
 
   return app;
 }

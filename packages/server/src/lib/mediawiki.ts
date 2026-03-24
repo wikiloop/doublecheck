@@ -124,6 +124,104 @@ export async function fetchDiffFromMW(
   }
 }
 
+// Make apiUrl available to other modules
+export { apiUrl };
+
+const USER_AGENT = "WikiLoop-DoubleCheck/5.0 (https://doublecheck.wikiloop.org)";
+
+/** Fetch the latest N revisions of a page by title */
+export async function fetchPageLatestRevisions(
+  wiki: string,
+  title: string,
+  limit: number = 2,
+): Promise<{ revid: number; user: string }[]> {
+  const url = new URL(apiUrl(wiki));
+  url.searchParams.set("action", "query");
+  url.searchParams.set("prop", "revisions");
+  url.searchParams.set("titles", title);
+  url.searchParams.set("rvlimit", String(limit));
+  url.searchParams.set("rvprop", "ids|user");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+  url.searchParams.set("origin", "*");
+
+  const res = await fetch(url.toString(), {
+    headers: { "User-Agent": USER_AGENT },
+  });
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const page = data?.query?.pages?.[0];
+  if (!page || page.missing) return [];
+  return (page.revisions ?? []).map((r: { revid: number; user: string }) => ({
+    revid: r.revid,
+    user: r.user,
+  }));
+}
+
+/** Fetch a CSRF token using the user's OAuth Bearer token */
+export async function fetchCsrfToken(
+  wiki: string,
+  accessToken: string,
+): Promise<string | null> {
+  const url = new URL(apiUrl(wiki));
+  url.searchParams.set("action", "query");
+  url.searchParams.set("meta", "tokens");
+  url.searchParams.set("type", "csrf");
+  url.searchParams.set("format", "json");
+  url.searchParams.set("formatversion", "2");
+
+  const res = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "User-Agent": USER_AGENT,
+    },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data?.query?.tokens?.csrftoken ?? null;
+}
+
+/** Undo a specific revision via action=edit */
+export async function performUndo(
+  wiki: string,
+  accessToken: string,
+  params: { title: string; revId: number; summary: string; csrfToken: string },
+): Promise<{ success: boolean; newRevId?: number; error?: string; errorCode?: string }> {
+  const url = new URL(apiUrl(wiki));
+
+  const body = new URLSearchParams();
+  body.set("action", "edit");
+  body.set("title", params.title);
+  body.set("undo", String(params.revId));
+  body.set("summary", params.summary);
+  body.set("token", params.csrfToken);
+  body.set("format", "json");
+  body.set("formatversion", "2");
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "User-Agent": USER_AGENT,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+
+  const data = await res.json();
+
+  if (data?.edit?.result === "Success") {
+    return { success: true, newRevId: data.edit.newrevid };
+  }
+
+  return {
+    success: false,
+    error: data?.error?.info ?? data?.edit?.result ?? "Unknown error",
+    errorCode: data?.error?.code ?? "unknown",
+  };
+}
+
 /** Verify a MediaWiki access token by calling userinfo */
 export async function verifyMWToken(
   accessToken: string,

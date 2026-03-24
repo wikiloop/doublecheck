@@ -14,6 +14,7 @@ import RevisionCard from "../components/RevisionCard.vue";
 import DiffBox from "../components/DiffBox.vue";
 import ActionPanel from "../components/ActionPanel.vue";
 import JudgementPanel from "../components/JudgementPanel.vue";
+import DirectRevertPanel from "../components/DirectRevertPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -217,6 +218,14 @@ watch(
           :user-action="currentAction"
         />
       </div>
+
+      <DirectRevertPanel
+        v-if="currentAction === 'ShouldRevert'"
+        :wiki="revision.wiki"
+        :rev-id="revision.revId"
+        :revision-user="revision.user"
+        :title="revision.title"
+      />
 
       <div class="dc-review-page__nav">
         <CdxButton

@@ -82,5 +82,14 @@
   "Message-SorryWeFailedToRevert": "Sorry, we failed to revert the revision {revision}.",
   "Message-TheRevisionIsSuccessfullyRevertedAs": "The revision {oldRevision} is successfully reverted as {newRevision}.",
   "Message-ThereIsNoEditSummary": "There is no edit summary.",
-  "Message-YourJudgementLogged": "Your judgement for {article} for revision {revision} has been logged."
+  "Message-YourJudgementLogged": "Your judgement for {article} for revision {revision} has been logged.",
+  "Button-DirectRevert": "Direct Revert",
+  "Label-CheckingEligibility": "Checking revert eligibility...",
+  "Label-Reverting": "Reverting...",
+  "Label-PageHistory": "page history",
+  "Message-RevertSuccess": "Successfully reverted!",
+  "Message-RevertFailed": "Revert failed",
+  "Message-ConsecutiveEdits": "User {user} made multiple consecutive edits on this page. Direct revert is not available — please review the",
+  "Message-NotCurrentRevision": "This edit is no longer the latest revision and cannot be directly reverted.",
+  "Message-LoginToRevert": "Log in with your Wikipedia account to directly revert this edit."
 }

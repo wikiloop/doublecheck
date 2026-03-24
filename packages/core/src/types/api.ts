@@ -20,6 +20,8 @@ export const API_PATHS = {
   leaderboard: "/api/leaderboard",
   userHistory: "/api/user/:userId/history",
   liftWing: "/api/liftwing/:wiki/:revId",
+  revertCheck: "/api/revert/check/:wiki/:revId",
+  revert: "/api/revert",
   authLogin: "/api/auth/login",
   authCallback: "/api/auth/callback",
   authMe: "/api/auth/me",
@@ -84,6 +86,35 @@ export interface UserHistoryResponse {
 
 /** GET /api/liftwing/:wiki/:revId */
 export type LiftWingResponse = LiftWingScore;
+
+// ---------------------------------------------------------------------------
+// Auth endpoint types
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Revert endpoint types
+// ---------------------------------------------------------------------------
+
+/** GET /api/revert/check/:wiki/:revId */
+export interface RevertCheckResponse {
+  eligible: boolean;
+  reason?: "not_logged_in" | "not_current" | "consecutive_edits";
+  pageHistoryUrl?: string;
+  consecutiveEditUser?: string;
+}
+
+/** POST /api/revert */
+export interface RevertRequest {
+  wiki: string;
+  revId: number;
+}
+
+export interface RevertResponse {
+  success: boolean;
+  newRevId?: number;
+  error?: string;
+  errorCode?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Auth endpoint types
