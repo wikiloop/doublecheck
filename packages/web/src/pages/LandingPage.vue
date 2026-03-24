@@ -9,6 +9,7 @@ import {
   cdxIconPuzzle,
   cdxIconCode,
   cdxIconLinkExternal,
+  cdxIconUndo,
 } from "@wikimedia/codex-icons";
 
 onMounted(() => {
@@ -105,6 +106,16 @@ onMounted(() => {
           unified interface.
         </p>
       </div>
+      <div class="dc-feature">
+        <div class="dc-feature__icon">
+          <CdxIcon :icon="cdxIconUndo" />
+        </div>
+        <h3>Direct Revert</h3>
+        <p>
+          One-click revert of vandalism directly from the review page. Login
+          with your Wikipedia account and act immediately.
+        </p>
+      </div>
     </section>
 
     <!-- Use It -->
@@ -193,7 +204,10 @@ onMounted(() => {
           <div class="dc-how__step-num">
             3
           </div>
-          <p>Community consensus drives quality across all Wikis.</p>
+          <p>
+            If it's vandalism, <strong>directly revert</strong> it with one
+            click. Community consensus drives quality across all Wikis.
+          </p>
         </div>
       </div>
       <router-link
@@ -265,7 +279,7 @@ onMounted(() => {
 /* Features */
 .dc-features {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 2rem;
   padding: 3rem 0;
   border-top: 1px solid var(--border-color-subtle);
