@@ -96,7 +96,11 @@ auth.get("/callback", async (c) => {
   );
 
   if (!tokenRes.ok) {
-    return c.json({ error: "Token exchange failed" }, 502);
+    const errorBody = await tokenRes.text();
+    console.error(
+      `OAuth token exchange failed: status=${tokenRes.status} redirect_uri=${getPublicOrigin(c)}/auth/callback body=${errorBody}`,
+    );
+    return c.json({ error: "Token exchange failed", detail: errorBody }, 502);
   }
 
   const tokenData = (await tokenRes.json()) as { access_token?: string };
@@ -142,7 +146,7 @@ auth.get("/callback", async (c) => {
   );
 
   // Set session
-  setSession(c, {
+  await setSession(c, {
     userId: username,
     username,
     identity: { type: "named", username, verified: true },
@@ -153,8 +157,8 @@ auth.get("/callback", async (c) => {
 });
 
 /** GET /api/auth/me */
-auth.get("/me", (c) => {
-  const session = getSession(c);
+auth.get("/me", async (c) => {
+  const session = await getSession(c);
 
   if (!session) {
     const response: AuthMeUnauthenticatedResponse = { loggedIn: false };
@@ -171,8 +175,8 @@ auth.get("/me", (c) => {
 });
 
 /** GET /api/auth/logout */
-auth.get("/logout", (c) => {
-  clearSession(c);
+auth.get("/logout", async (c) => {
+  await clearSession(c);
   const response: AuthLogoutResponse = { success: true };
   return c.json(response);
 });

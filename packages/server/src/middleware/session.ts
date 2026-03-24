@@ -1,5 +1,6 @@
 import type { MiddlewareHandler, Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { SessionModel } from "../db/models/index.js";
 
 export interface SessionData {
   userId: string;
@@ -15,8 +16,9 @@ export interface SessionData {
 const SESSION_COOKIE = "dc_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-// In-memory session store
-const sessions = new Map<string, SessionData>();
+// In-memory cache to avoid hitting MongoDB on every request.
+// Falls through to DB on cache miss (e.g. after server restart).
+const sessionCache = new Map<string, SessionData>();
 
 function generateSessionId(): string {
   const bytes = new Uint8Array(32);
@@ -26,15 +28,58 @@ function generateSessionId(): string {
     .join("");
 }
 
-export function getSession(c: Context): SessionData | null {
+export async function getSession(c: Context): Promise<SessionData | null> {
   const sessionId = getCookie(c, SESSION_COOKIE);
   if (!sessionId) return null;
-  return sessions.get(sessionId) ?? null;
+
+  // Check in-memory cache first
+  const cached = sessionCache.get(sessionId);
+  if (cached) return cached;
+
+  // Fall through to MongoDB
+  try {
+    const doc = await SessionModel.findOne({ sessionId }).lean<{
+      userId: string;
+      username: string;
+      identity: SessionData["identity"];
+      accessToken?: string;
+    }>();
+    if (!doc) return null;
+
+    const data: SessionData = {
+      userId: doc.userId,
+      username: doc.username,
+      identity: doc.identity,
+      accessToken: doc.accessToken,
+    };
+    sessionCache.set(sessionId, data);
+    return data;
+  } catch {
+    return null;
+  }
 }
 
-export function setSession(c: Context, data: SessionData): void {
+export async function setSession(c: Context, data: SessionData): Promise<void> {
   const sessionId = generateSessionId();
-  sessions.set(sessionId, data);
+  const expiresAt = new Date(Date.now() + SESSION_MAX_AGE * 1000);
+
+  // Persist to MongoDB
+  try {
+    await SessionModel.create({
+      sessionId,
+      userId: data.userId,
+      username: data.username,
+      identity: data.identity,
+      accessToken: data.accessToken,
+      expiresAt,
+    });
+  } catch (err) {
+    console.error("Failed to persist session to MongoDB:", err);
+  }
+
+  // Also cache in memory
+  sessionCache.set(sessionId, data);
+
   setCookie(c, SESSION_COOKIE, sessionId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -44,10 +89,15 @@ export function setSession(c: Context, data: SessionData): void {
   });
 }
 
-export function clearSession(c: Context): void {
+export async function clearSession(c: Context): Promise<void> {
   const sessionId = getCookie(c, SESSION_COOKIE);
   if (sessionId) {
-    sessions.delete(sessionId);
+    sessionCache.delete(sessionId);
+    try {
+      await SessionModel.deleteOne({ sessionId });
+    } catch {
+      // best-effort cleanup
+    }
   }
   deleteCookie(c, SESSION_COOKIE, { path: "/" });
 }
@@ -60,5 +110,5 @@ export function sessionMiddleware(): MiddlewareHandler {
 
 // Exported for testing
 export function _clearAllSessions(): void {
-  sessions.clear();
+  sessionCache.clear();
 }

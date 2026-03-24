@@ -36,7 +36,7 @@ judgement.post("/", async (c) => {
   }
 
   // Get user from session or use anonymous
-  const session = getSession(c);
+  const session = await getSession(c);
   const userId = session?.userId ?? "anonymous";
   const identity = session?.identity ?? {
     type: "anon" as const,

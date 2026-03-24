@@ -66,7 +66,7 @@ async function checkEligibility(
 
 /** GET /api/revert/check/:wiki/:revId — eligibility check */
 revert.get("/check/:wiki/:revId", async (c) => {
-  const session = getSession(c);
+  const session = await getSession(c);
   if (!session?.accessToken) {
     return c.json<RevertCheckResponse>({ eligible: false, reason: "not_logged_in" });
   }
@@ -85,7 +85,7 @@ revert.get("/check/:wiki/:revId", async (c) => {
 
 /** POST /api/revert — execute the revert */
 revert.post("/", async (c) => {
-  const session = getSession(c);
+  const session = await getSession(c);
   if (!session?.accessToken) {
     return c.json({ error: "Not logged in" }, 401);
   }
