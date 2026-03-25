@@ -77,23 +77,33 @@ function userUrl(): string {
         {{ revision.comment }}
       </p>
       <div class="dc-revision-card__scores">
-        <span v-if="revertRiskScore">
+        <span
+          v-if="revertRiskScore"
+          class="dc-revision-card__score"
+          title="Revert Risk prediction from Wikimedia EventStream (revert_risk_prediction model)"
+        >
           Revert likelihood:
           <strong :style="{ color: scoreColor(revertRiskScore.revertRisk) }">
             {{ formatScore(revertRiskScore.revertRisk) }}
           </strong>
         </span>
         <template v-if="liftWingScore">
-          <span>
+          <span
+            class="dc-revision-card__score"
+            title="Damaging score from Wikimedia LiftWing API (editquality/damaging model)"
+          >
             Damaging:
             <strong :style="{ color: scoreColor(liftWingScore.damaging) }">
               {{ formatScore(liftWingScore.damaging) }}
             </strong>
           </span>
-          <span>
-            Good faith:
+          <span
+            class="dc-revision-card__score"
+            title="Bad faith score from Wikimedia LiftWing API (editquality/goodfaith model, inverted)"
+          >
+            Bad faith:
             <strong :style="{ color: scoreColor(1 - liftWingScore.goodfaith) }">
-              {{ formatScore(liftWingScore.goodfaith) }}
+              {{ formatScore(1 - liftWingScore.goodfaith) }}
             </strong>
           </span>
         </template>
@@ -171,6 +181,11 @@ function userUrl(): string {
   gap: 1.5rem;
   margin-top: 0.5rem;
   font-size: 0.85rem;
+}
+
+.dc-revision-card__score {
+  cursor: help;
+  border-bottom: 1px dotted var(--color-subtle);
 }
 
 .dc-revision-card__scores-loading {

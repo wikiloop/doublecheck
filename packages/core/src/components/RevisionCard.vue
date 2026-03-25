@@ -54,6 +54,7 @@ function pct(value: number): string {
         <div
           v-if="props.revertRiskScore"
           class="dc-score"
+          title="Revert Risk prediction from Wikimedia EventStream (revert_risk_prediction model)"
         >
           <label class="dc-score__label">Revert risk</label>
           <div class="dc-score__bar">
@@ -65,7 +66,10 @@ function pct(value: number): string {
           <span class="dc-score__value">{{ pct(props.revertRiskScore.revertRisk) }}</span>
         </div>
         <template v-if="props.liftWingScore">
-          <div class="dc-score">
+          <div
+            class="dc-score"
+            title="Damaging score from Wikimedia LiftWing API (editquality/damaging model)"
+          >
             <label class="dc-score__label">Damaging</label>
             <div class="dc-score__bar">
               <div
@@ -75,15 +79,18 @@ function pct(value: number): string {
             </div>
             <span class="dc-score__value">{{ pct(props.liftWingScore.damaging) }}</span>
           </div>
-          <div class="dc-score">
-            <label class="dc-score__label">Good faith</label>
+          <div
+            class="dc-score"
+            title="Bad faith score from Wikimedia LiftWing API (editquality/goodfaith model, inverted)"
+          >
+            <label class="dc-score__label">Bad faith</label>
             <div class="dc-score__bar">
               <div
-                class="dc-score__fill dc-score__fill--goodfaith"
-                :style="{ width: pct(props.liftWingScore.goodfaith) }"
+                class="dc-score__fill dc-score__fill--badfaith"
+                :style="{ width: pct(1 - props.liftWingScore.goodfaith) }"
               />
             </div>
-            <span class="dc-score__value">{{ pct(props.liftWingScore.goodfaith) }}</span>
+            <span class="dc-score__value">{{ pct(1 - props.liftWingScore.goodfaith) }}</span>
           </div>
         </template>
         <div
@@ -150,6 +157,7 @@ function pct(value: number): string {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: help;
 }
 
 .dc-score__label {
@@ -179,8 +187,8 @@ function pct(value: number): string {
   background: var(--dc-color-damaging, #d33);
 }
 
-.dc-score__fill--goodfaith {
-  background: var(--dc-color-goodfaith, #36c);
+.dc-score__fill--badfaith {
+  background: var(--dc-color-badfaith, #f57c00);
 }
 
 .dc-score__value {
