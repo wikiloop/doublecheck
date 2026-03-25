@@ -6,9 +6,8 @@
 #   ./scripts/deploy.sh [targets...] [options]
 #
 # Targets (default: all):
-#   vercel      Deploy web SPA to Vercel (doublecheck.wikiloop.org)
+#   vercel      Deploy web SPA + API to Vercel (doublecheck.wikiloop.org)
 #   toolforge   Build & restart on Toolforge (wikiloop-doublecheck.toolforge.org)
-#   heroku      Docker deploy to Heroku (wikiloop-doublecheck-prod.herokuapp.com)
 #   extension   Build Chrome extension zip (manual CWS upload)
 #   userscript  Build userscript (served from Toolforge)
 #   all         All of the above
@@ -47,7 +46,7 @@ DRY_RUN=false
 
 for arg in "$@"; do
   case "$arg" in
-    vercel|toolforge|heroku|extension|userscript|all) TARGETS+=("$arg") ;;
+    vercel|toolforge|extension|userscript|all) TARGETS+=("$arg") ;;
     --bump=*)   BUMP="${arg#--bump=}" ;;
     --no-bump)  BUMP="" ;;
     --no-push)  DO_PUSH=false ;;
@@ -65,7 +64,7 @@ done
 
 # Default to all targets
 if [ ${#TARGETS[@]} -eq 0 ] || [[ " ${TARGETS[*]} " == *" all "* ]]; then
-  TARGETS=(vercel toolforge heroku extension userscript)
+  TARGETS=(vercel toolforge extension userscript)
 fi
 
 # ─── Load credentials ────────────────────────────────────────────────────────
@@ -260,31 +259,6 @@ deploy_toolforge() {
   fi
 }
 
-# ─── Deploy: Heroku ──────────────────────────────────────────────────────────
-HEROKU_APP="wikiloop-doublecheck-prod"
-
-deploy_heroku() {
-  step "Deploying to Heroku ($HEROKU_APP)"
-  if $DRY_RUN; then
-    info "[dry-run] Would run: heroku container:push web + release"
-    return
-  fi
-
-  heroku container:push web -a "$HEROKU_APP" 2>&1 | tail -5
-  heroku container:release web -a "$HEROKU_APP" 2>&1
-  ok "Heroku container released"
-
-  # Wait for health check
-  sleep 10
-  local health
-  health=$(curl -s --max-time 10 "https://$HEROKU_APP.herokuapp.com/api/health" 2>/dev/null || echo '{}')
-  if echo "$health" | grep -q '"status":"ok"'; then
-    ok "Heroku healthy: $health"
-  else
-    warn "Heroku health check returned: $health"
-  fi
-}
-
 # ─── Deploy: Extension ───────────────────────────────────────────────────────
 deploy_extension() {
   build_extension
@@ -327,7 +301,6 @@ main() {
     case "$target" in
       vercel)     deploy_vercel ;;
       toolforge)  deploy_toolforge ;;
-      heroku)     deploy_heroku ;;
       extension)  deploy_extension ;;
       userscript) deploy_userscript ;;
     esac
@@ -342,7 +315,6 @@ main() {
     case "$target" in
       vercel)     ok "  Vercel:     https://doublecheck.wikiloop.org" ;;
       toolforge)  ok "  Toolforge:  https://wikiloop-doublecheck.toolforge.org" ;;
-      heroku)     ok "  Heroku:     https://$HEROKU_APP.herokuapp.com" ;;
       extension)  ok "  Extension:  dist/doublecheck-extension-*.zip (upload to CWS)" ;;
       userscript) ok "  Userscript: served from Toolforge" ;;
     esac
