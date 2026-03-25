@@ -50,8 +50,20 @@ function parseEvent(data: unknown): ScoredRevision | null {
       modelName: prediction.model_name as string | undefined,
       modelVersion: prediction.model_version as string | undefined,
     },
-    rankScore: revertRiskProb,
+    rankScore: humanPriorityScore(revertRiskProb),
   };
+}
+
+/**
+ * Compute a human-review priority score from raw revert risk.
+ * Very high risk (>0.95) gets auto-reverted by patrol bots — deprioritize.
+ * The sweet spot for human review is ~0.6-0.95 (under bot threshold but still risky).
+ */
+function humanPriorityScore(revertRisk: number): number {
+  if (revertRisk >= 0.95) {
+    return 0.55 - (revertRisk - 0.95) * 1.0;
+  }
+  return revertRisk;
 }
 
 function addToBuffer(scored: ScoredRevision): void {

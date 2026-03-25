@@ -95,50 +95,61 @@ revert.post("/", async (c) => {
     return c.json({ error: "wiki and revId are required" }, 400);
   }
 
-  // Fetch revision metadata
-  const rev = await fetchRevisionFromMW(body.wiki, body.revId);
-  if (!rev) {
-    return c.json<RevertResponse>({ success: false, error: "Revision not found", errorCode: "not_found" }, 404);
-  }
+  try {
+    // Fetch revision metadata
+    const rev = await fetchRevisionFromMW(body.wiki, body.revId);
+    if (!rev) {
+      return c.json<RevertResponse>({ success: false, error: "Revision not found", errorCode: "not_found" }, 404);
+    }
 
-  // Re-verify eligibility server-side (never trust client)
-  const eligibility = await checkEligibility(body.wiki, body.revId, rev.title, rev.user);
-  if (!eligibility.eligible) {
+    // Re-verify eligibility server-side (never trust client)
+    const eligibility = await checkEligibility(body.wiki, body.revId, rev.title, rev.user);
+    if (!eligibility.eligible) {
+      return c.json<RevertResponse>(
+        { success: false, error: `Not eligible: ${eligibility.reason}`, errorCode: eligibility.reason },
+        409,
+      );
+    }
+
+    // Get CSRF token
+    const csrfToken = await fetchCsrfToken(body.wiki, session.accessToken);
+    if (!csrfToken) {
+      return c.json<RevertResponse>(
+        { success: false, error: "Failed to obtain edit token — session may have expired", errorCode: "token_failed" },
+        401,
+      );
+    }
+
+    // Perform the undo — use the request origin so the summary shows the correct domain
+    const origin = c.req.header("origin") ?? "https://doublecheck.wikiloop.org";
+    const summary = editSummary(body.revId, rev.user, body.wiki, origin);
+    const result = await performUndo(body.wiki, session.accessToken, {
+      title: rev.title,
+      revId: body.revId,
+      summary,
+      csrfToken,
+    });
+
+    if (result.success) {
+      // Mark the interaction as reverted (non-blocking)
+      InteractionModel.updateOne(
+        { revisionWiki: body.wiki, revisionId: body.revId, userId: session.userId },
+        { $set: { revertedByUser: true } },
+      ).catch(() => {});
+    }
+
+    const status = result.success ? 200 : 422;
+    return c.json<RevertResponse>(result, status);
+  } catch (err) {
+    const message =
+      err instanceof Error && err.name === "AbortError"
+        ? "MediaWiki API timed out — please try again"
+        : "Unexpected error communicating with Wikipedia";
     return c.json<RevertResponse>(
-      { success: false, error: `Not eligible: ${eligibility.reason}`, errorCode: eligibility.reason },
-      409,
+      { success: false, error: message, errorCode: "timeout" },
+      504,
     );
   }
-
-  // Get CSRF token
-  const csrfToken = await fetchCsrfToken(body.wiki, session.accessToken);
-  if (!csrfToken) {
-    return c.json<RevertResponse>(
-      { success: false, error: "Failed to obtain edit token — session may have expired", errorCode: "token_failed" },
-      401,
-    );
-  }
-
-  // Perform the undo — use the request origin so the summary shows the correct domain
-  const origin = c.req.header("origin") ?? "https://doublecheck.wikiloop.org";
-  const summary = editSummary(body.revId, rev.user, body.wiki, origin);
-  const result = await performUndo(body.wiki, session.accessToken, {
-    title: rev.title,
-    revId: body.revId,
-    summary,
-    csrfToken,
-  });
-
-  if (result.success) {
-    // Mark the interaction as reverted (non-blocking)
-    InteractionModel.updateOne(
-      { revisionWiki: body.wiki, revisionId: body.revId, userId: session.userId },
-      { $set: { revertedByUser: true } },
-    ).catch(() => {});
-  }
-
-  const status = result.success ? 200 : 422;
-  return c.json<RevertResponse>(result, status);
 });
 
 export { revert };

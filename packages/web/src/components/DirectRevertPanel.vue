@@ -46,17 +46,24 @@ async function checkEligibility() {
 async function doRevert() {
   reverting.value = true;
   revertResult.value = null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
   try {
     const res = await fetch("/api/revert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ wiki: props.wiki, revId: props.revId }),
+      signal: controller.signal,
     });
     revertResult.value = await res.json();
-  } catch {
-    revertResult.value = { success: false, error: "Network error" };
+  } catch (e) {
+    const msg = controller.signal.aborted
+      ? "Request timed out — the revert may still be processing. Check the page history."
+      : "Network error";
+    revertResult.value = { success: false, error: msg };
   } finally {
+    clearTimeout(timer);
     reverting.value = false;
   }
 }

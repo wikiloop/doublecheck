@@ -36,10 +36,10 @@ describe("RevisionCard", () => {
       props: { revision: mockRevision, liftWingScore: mockScore },
     });
 
-    expect(wrapper.text()).toContain("85.0%");
-    expect(wrapper.text()).toContain("12.0%");
+    expect(wrapper.text()).toContain("85.0%"); // damaging
+    expect(wrapper.text()).toContain("88.0%"); // bad faith = 1 - 0.12
     expect(wrapper.find(".dc-score__fill--damaging").exists()).toBe(true);
-    expect(wrapper.find(".dc-score__fill--goodfaith").exists()).toBe(true);
+    expect(wrapper.find(".dc-score__fill--badfaith").exists()).toBe(true);
   });
 
   it("does not render scores when liftWingScore is not provided", () => {

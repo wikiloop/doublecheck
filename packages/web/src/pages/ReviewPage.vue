@@ -11,7 +11,7 @@ import type {
   JudgementsResponse,
   ScoredRevision,
 } from "@doublecheck/core";
-import { CdxButton } from "@wikimedia/codex";
+import { CdxButton, CdxMessage } from "@wikimedia/codex";
 import RevisionCard from "../components/RevisionCard.vue";
 import DiffBox from "../components/DiffBox.vue";
 import ActionPanel from "../components/ActionPanel.vue";
@@ -49,6 +49,10 @@ const poolLoading = ref(false);
 const poolStreamStatus = ref<"connecting" | "waiting" | "ready">("connecting");
 const selectedWiki = ref("enwiki");
 const streamConnected = ref(false);
+
+// Page status: detect when the current revision's page gets new edits
+const pageStatus = ref<"current" | "reverted" | "new_edits" | null>(null);
+let pageStatusTimer: ReturnType<typeof setInterval> | null = null;
 
 let eventSource: EventSource | null = null;
 let initialPoolResolve: (() => void) | null = null;
@@ -229,6 +233,67 @@ function waitForInitialPool(): Promise<void> {
   return initialPoolPromise;
 }
 
+/** Poll MediaWiki to check if the current page has new revisions since ours. */
+async function checkPageStatus() {
+  const rev = revision.value;
+  if (!rev || !rev.title) return;
+
+  try {
+    const url = new URL(mwApiUrl(rev.wiki));
+    url.searchParams.set("action", "query");
+    url.searchParams.set("prop", "revisions");
+    url.searchParams.set("titles", rev.title);
+    url.searchParams.set("rvlimit", "3");
+    url.searchParams.set("rvprop", "ids|user|comment");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("formatversion", "2");
+    url.searchParams.set("origin", "*");
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return;
+    const data = await res.json();
+    const page = data?.query?.pages?.[0];
+    if (!page?.revisions?.length) return;
+
+    const latestRevId = page.revisions[0].revid as number;
+    if (latestRevId === rev.revId) {
+      pageStatus.value = "current";
+      return;
+    }
+
+    // Page has newer edits — check if our revision was reverted
+    const isRevert = page.revisions.some((r: { comment?: string }) => {
+      const c = (r.comment ?? "").toLowerCase();
+      return (
+        c.includes("revert") ||
+        c.includes("undid revision") ||
+        c.includes("undo revision") ||
+        c.includes("rv ") ||
+        c.includes("reverted")
+      );
+    });
+
+    pageStatus.value = isRevert ? "reverted" : "new_edits";
+  } catch {
+    // Network error — ignore
+  }
+}
+
+function startPageStatusPolling() {
+  stopPageStatusPolling();
+  pageStatus.value = null;
+  // Check immediately, then every 15 seconds
+  checkPageStatus();
+  pageStatusTimer = setInterval(checkPageStatus, 15_000);
+}
+
+function stopPageStatusPolling() {
+  if (pageStatusTimer) {
+    clearInterval(pageStatusTimer);
+    pageStatusTimer = null;
+  }
+}
+
 function mwApiUrl(wiki: string): string {
   if (wiki === "enwiki" || wiki === "en.wikipedia.org") {
     return "https://en.wikipedia.org/w/api.php";
@@ -306,6 +371,7 @@ async function loadRevision(wiki?: string, revId?: string | number) {
           lazyLoadLiftWing(wiki, Number(revId));
         }
       }
+      startPageStatusPolling();
       // Start stream in background so pool fills for Next button
       restoreCachedPool();
       startStream();
@@ -350,6 +416,7 @@ function loadNextFromPool() {
   if (!next.liftWing) {
     lazyLoadLiftWing(next.wiki, next.revId);
   }
+  startPageStatusPolling();
 }
 
 async function loadJudgements(wiki: string, revId: number) {
@@ -437,6 +504,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopStream();
+  stopPageStatusPolling();
   window.removeEventListener("keydown", onKeydown);
 });
 
@@ -479,6 +547,22 @@ onUnmounted(() => {
           {{ streamConnected ? 'stream connected' : 'stream reconnecting...' }}
         </span>
       </div>
+
+      <CdxMessage
+        v-if="pageStatus === 'reverted'"
+        type="warning"
+        class="dc-review-page__page-status"
+      >
+        This revision appears to have been reverted by someone else. You can skip to the next one.
+      </CdxMessage>
+
+      <CdxMessage
+        v-else-if="pageStatus === 'new_edits'"
+        type="notice"
+        class="dc-review-page__page-status"
+      >
+        New edits have been made to this page since this revision. Direct revert may not be possible.
+      </CdxMessage>
 
       <RevisionCard
         :revision="revision"
@@ -598,6 +682,10 @@ onUnmounted(() => {
 
 .dc-stream--disconnected {
   color: var(--color-warning);
+}
+
+.dc-review-page__page-status {
+  margin: 0;
 }
 
 .dc-review-page__diff {

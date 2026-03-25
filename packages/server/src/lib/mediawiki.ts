@@ -129,6 +129,19 @@ export { apiUrl };
 
 const USER_AGENT = "WikiLoop-DoubleCheck/5.0 (https://doublecheck.wikiloop.org)";
 
+/** Fetch with a timeout (default 15s) */
+function fetchWithTimeout(
+  url: string,
+  init?: RequestInit,
+  timeoutMs = 15_000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timer),
+  );
+}
+
 /** Fetch the latest N revisions of a page by title */
 export async function fetchPageLatestRevisions(
   wiki: string,
@@ -145,7 +158,7 @@ export async function fetchPageLatestRevisions(
   url.searchParams.set("formatversion", "2");
   url.searchParams.set("origin", "*");
 
-  const res = await fetch(url.toString(), {
+  const res = await fetchWithTimeout(url.toString(), {
     headers: { "User-Agent": USER_AGENT },
   });
   if (!res.ok) return [];
@@ -171,7 +184,7 @@ export async function fetchCsrfToken(
   url.searchParams.set("format", "json");
   url.searchParams.set("formatversion", "2");
 
-  const res = await fetch(url.toString(), {
+  const res = await fetchWithTimeout(url.toString(), {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "User-Agent": USER_AGENT,
@@ -199,15 +212,19 @@ export async function performUndo(
   body.set("format", "json");
   body.set("formatversion", "2");
 
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "User-Agent": USER_AGENT,
-      "Content-Type": "application/x-www-form-urlencoded",
+  const res = await fetchWithTimeout(
+    url.toString(),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
     },
-    body: body.toString(),
-  });
+    20_000, // longer timeout for the actual edit action
+  );
 
   const data = await res.json();
 
