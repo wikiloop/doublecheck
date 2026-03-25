@@ -74,6 +74,7 @@ export async function setSession(c: Context, data: SessionData): Promise<void> {
       username: data.username,
       identity: data.identity,
       accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
       expiresAt,
     });
   } catch (err) {

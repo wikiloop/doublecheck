@@ -9,7 +9,12 @@ import {
   getSession,
   setSession,
   clearSession,
+  updateSessionTokens,
 } from "../middleware/session.js";
+import {
+  verifyMWToken,
+  refreshAccessToken,
+} from "../lib/mediawiki.js";
 
 const auth = new Hono();
 
@@ -168,6 +173,26 @@ auth.get("/me", async (c) => {
   if (!session) {
     const response: AuthMeUnauthenticatedResponse = { loggedIn: false };
     return c.json(response);
+  }
+
+  // Validate the access token is still alive
+  if (session.accessToken) {
+    const valid = await verifyMWToken(session.accessToken);
+    if (!valid) {
+      // Token expired — try to refresh silently
+      if (session.refreshToken) {
+        const refreshed = await refreshAccessToken(session.refreshToken);
+        if (refreshed) {
+          await updateSessionTokens(c, refreshed.accessToken, refreshed.refreshToken);
+        } else {
+          // Refresh token also expired — force re-login
+          return c.json({ loggedIn: false, tokenExpired: true } as AuthMeUnauthenticatedResponse & { tokenExpired: boolean });
+        }
+      } else {
+        // Legacy session without refresh token — force re-login
+        return c.json({ loggedIn: false, tokenExpired: true } as AuthMeUnauthenticatedResponse & { tokenExpired: boolean });
+      }
+    }
   }
 
   const response: AuthMeResponse = {

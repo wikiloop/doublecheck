@@ -192,7 +192,10 @@ export async function fetchCsrfToken(
   });
   if (!res.ok) return null;
   const data = await res.json();
-  return data?.query?.tokens?.csrftoken ?? null;
+  const token = data?.query?.tokens?.csrftoken;
+  // "+\\" is the anonymous CSRF token — means the Bearer token was invalid/expired
+  if (!token || token === "+\\") return null;
+  return token;
 }
 
 /** Undo a specific revision (or range of revisions) via action=edit */

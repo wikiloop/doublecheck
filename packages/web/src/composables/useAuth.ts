@@ -17,6 +17,11 @@ export function useAuth() {
       } else {
         user.value = null;
         isLoggedIn.value = false;
+        // Session exists but token is dead — silently re-authenticate
+        if (data.tokenExpired) {
+          login(window.location.pathname + window.location.search);
+          return;
+        }
       }
     } catch {
       user.value = null;
