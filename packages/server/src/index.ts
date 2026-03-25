@@ -20,11 +20,15 @@ import { events } from "./routes/events.js";
 import { revert } from "./routes/revert.js";
 import { rankedFeed } from "./routes/rankedFeed.js";
 import { startRevertRiskStream } from "./lib/revertRiskStream.js";
+import { readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
-import { createRequire } from "node:module";
 
-const _require = createRequire(import.meta.url);
-const PKG_VERSION: string = _require("@doublecheck/server/package.json").version ?? "unknown";
+let PKG_VERSION = "unknown";
+try {
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  PKG_VERSION = pkg.version;
+} catch { /* bundled or no package.json accessible */ }
+
 let GIT_HASH = process.env.GIT_HASH ?? "";
 if (!GIT_HASH) {
   try { GIT_HASH = execSync("git rev-parse --short=6 HEAD", { encoding: "utf8" }).trim(); } catch { /* not a git repo */ }
