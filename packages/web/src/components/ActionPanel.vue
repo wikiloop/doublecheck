@@ -27,6 +27,7 @@ const actions: { key: JudgementAction; label: string; color: string; shortcut: s
         v-for="action in actions"
         :key="action.key"
         :weight="currentAction === action.key ? 'primary' : 'normal'"
+        :class="['dc-action-btn', `dc-action-btn--${action.key}`]"
         :style="currentAction === action.key ? { background: action.color, borderColor: action.color, color: '#fff' } : {}"
         :disabled="disabled"
         @click="emit('judge', action.key)"
@@ -55,6 +56,21 @@ const actions: { key: JudgementAction; label: string; color: string; shortcut: s
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.dc-action-btn--ShouldRevert {
+  border-color: var(--color-destructive) !important;
+  color: var(--color-destructive) !important;
+}
+
+.dc-action-btn--NotSure {
+  border-color: var(--color-warning) !important;
+  color: var(--color-warning) !important;
+}
+
+.dc-action-btn--LooksGood {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
 }
 
 .dc-action-panel__kbd {
