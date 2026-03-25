@@ -203,11 +203,13 @@ git_push() {
 deploy_vercel() {
   step "Deploying to Vercel (doublecheck.wikiloop.org)"
   if $DRY_RUN; then
-    info "[dry-run] Would run: npx vercel --prod"
+    info "[dry-run] Would run: npx vercel deploy --prebuilt --prod"
     return
   fi
 
-  npx vercel --prod 2>&1 | tail -3
+  # Generate Vercel build output from locally built dist/web
+  npx vercel build --prod 2>&1 | tail -5
+  npx vercel deploy --prebuilt --prod 2>&1 | tail -3
   ok "Vercel deployed"
 }
 
