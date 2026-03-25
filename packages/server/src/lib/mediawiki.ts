@@ -195,11 +195,11 @@ export async function fetchCsrfToken(
   return data?.query?.tokens?.csrftoken ?? null;
 }
 
-/** Undo a specific revision via action=edit */
+/** Undo a specific revision (or range of revisions) via action=edit */
 export async function performUndo(
   wiki: string,
   accessToken: string,
-  params: { title: string; revId: number; summary: string; csrfToken: string },
+  params: { title: string; revId: number; summary: string; csrfToken: string; undoafter?: number },
 ): Promise<{ success: boolean; newRevId?: number; error?: string; errorCode?: string }> {
   const url = new URL(apiUrl(wiki));
 
@@ -207,6 +207,9 @@ export async function performUndo(
   body.set("action", "edit");
   body.set("title", params.title);
   body.set("undo", String(params.revId));
+  if (params.undoafter) {
+    body.set("undoafter", String(params.undoafter));
+  }
   body.set("summary", params.summary);
   body.set("token", params.csrfToken);
   body.set("format", "json");

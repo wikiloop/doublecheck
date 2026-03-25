@@ -63,6 +63,21 @@ judgement.post("/", async (c) => {
     { upsert: true, new: true, timestamps: true },
   );
 
+  // Batch-apply judgement to additional consecutive revisions if provided
+  if (body.additionalRevIds?.length) {
+    const bulkOps = body.additionalRevIds.map((rid: number) => ({
+      updateOne: {
+        filter: { revisionWiki: body.wiki, revisionId: rid, userId },
+        update: {
+          $set: { action: body.action, identity },
+          $setOnInsert: { revisionWiki: body.wiki, revisionId: rid, userId },
+        },
+        upsert: true,
+      },
+    }));
+    await InteractionModel.bulkWrite(bulkOps);
+  }
+
   const response: JudgementResponse = {
     revisionWiki: body.wiki,
     revisionId: body.revId,

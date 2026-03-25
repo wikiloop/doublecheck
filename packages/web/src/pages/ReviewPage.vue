@@ -53,6 +53,11 @@ const poolStreamStatus = ref<"connecting" | "waiting" | "ready">("connecting");
 const selectedWiki = ref("enwiki");
 const streamConnected = ref(false);
 
+// Consecutive edit grouping state
+const consecutiveRevIds = ref<number[]>([]);
+const baseRevId = ref<number | undefined>();
+const consecutiveEditUser = ref<string | undefined>();
+
 // Page status: detect when the current revision's page gets new edits
 const pageStatus = ref<"current" | "reverted" | "new_edits" | null>(null);
 let pageStatusTimer: ReturnType<typeof setInterval> | null = null;
@@ -340,6 +345,30 @@ async function fetchDiff(wiki: string, revId: number, parentRevId: number) {
   }
 }
 
+/** Check for consecutive edits and re-fetch combined diff if needed */
+async function checkConsecutiveEdits(wiki: string, revId: number, initialParentRevId: number) {
+  consecutiveRevIds.value = [];
+  baseRevId.value = undefined;
+  consecutiveEditUser.value = undefined;
+  try {
+    const res = await fetch(
+      `/api/revert/check/${encodeURIComponent(wiki)}/${revId}`,
+      { credentials: "include" },
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.consecutiveRevIds?.length > 1 && data.baseRevId) {
+      consecutiveRevIds.value = data.consecutiveRevIds;
+      baseRevId.value = data.baseRevId;
+      consecutiveEditUser.value = data.consecutiveEditUser;
+      // Re-fetch diff spanning the full consecutive range
+      fetchDiff(wiki, revId, data.baseRevId);
+    }
+  } catch {
+    // Non-critical — single-revision diff is already loaded
+  }
+}
+
 /** Lazy-load LiftWing damaging/goodfaith scores for the current revision */
 async function lazyLoadLiftWing(wiki: string, revId: number) {
   liftWingLoading.value = true;
@@ -369,6 +398,7 @@ async function loadRevision(wiki?: string, revId?: string | number) {
         revision.value = data;
         liftWingScore.value = data.liftWing;
         fetchDiff(wiki, Number(revId), data.parentRevId ?? 0);
+        checkConsecutiveEdits(wiki, Number(revId), data.parentRevId ?? 0);
         await loadJudgements(wiki, Number(revId));
         if (!data.liftWing) {
           lazyLoadLiftWing(wiki, Number(revId));
@@ -418,9 +448,13 @@ function loadNextFromPool() {
   revertRiskScore.value = next.revertRisk;
   liftWingScore.value = next.liftWing;
   currentAction.value = null;
+  consecutiveRevIds.value = [];
+  baseRevId.value = undefined;
+  consecutiveEditUser.value = undefined;
   tallies.value = { ShouldRevert: 0, NotSure: 0, LooksGood: 0 };
   // Stay on /review — no URL redirect
   fetchDiff(next.wiki, next.revId, next.parentRevId ?? 0);
+  checkConsecutiveEdits(next.wiki, next.revId, next.parentRevId ?? 0);
   loadJudgements(next.wiki, next.revId);
   if (!next.liftWing) {
     lazyLoadLiftWing(next.wiki, next.revId);
@@ -445,15 +479,22 @@ async function onJudge(action: JudgementAction) {
   submitting.value = true;
   currentAction.value = action;
   try {
+    const judgeBody: Record<string, unknown> = {
+      wiki: revision.value.wiki,
+      revId: revision.value.revId,
+      action,
+    };
+    // Batch-apply judgement to all consecutive revisions if present
+    if (consecutiveRevIds.value.length > 1) {
+      judgeBody.additionalRevIds = consecutiveRevIds.value.filter(
+        (id) => id !== revision.value!.revId,
+      );
+    }
     await fetch("/api/judgement", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        wiki: revision.value.wiki,
-        revId: revision.value.revId,
-        action,
-      }),
+      body: JSON.stringify(judgeBody),
     });
     await loadJudgements(revision.value.wiki, revision.value.revId);
 
@@ -490,8 +531,12 @@ function loadPrev() {
   revertRiskScore.value = prev.revertRisk;
   liftWingScore.value = prev.liftWing;
   currentAction.value = null;
+  consecutiveRevIds.value = [];
+  baseRevId.value = undefined;
+  consecutiveEditUser.value = undefined;
   tallies.value = { ShouldRevert: 0, NotSure: 0, LooksGood: 0 };
   fetchDiff(prev.wiki, prev.revId, prev.parentRevId ?? 0);
+  checkConsecutiveEdits(prev.wiki, prev.revId, prev.parentRevId ?? 0);
   loadJudgements(prev.wiki, prev.revId);
   if (!prev.liftWing) {
     lazyLoadLiftWing(prev.wiki, prev.revId);
@@ -597,6 +642,14 @@ onUnmounted(() => {
         New edits have been made to this page since this revision. Direct revert may not be possible.
       </CdxMessage>
 
+      <CdxMessage
+        v-if="consecutiveRevIds.length > 1"
+        type="notice"
+        class="dc-review-page__page-status"
+      >
+        {{ t("Message-ConsecutiveEditsCombinedDiff", { count: consecutiveRevIds.length, user: consecutiveEditUser }) }}
+      </CdxMessage>
+
       <RevisionCard
         :revision="revision"
         :revert-risk-score="revertRiskScore"
@@ -635,6 +688,8 @@ onUnmounted(() => {
         :rev-id="revision.revId"
         :revision-user="revision.user"
         :title="revision.title"
+        :consecutive-rev-ids="consecutiveRevIds"
+        :base-rev-id="baseRevId"
       />
 
       <div class="dc-review-page__nav">

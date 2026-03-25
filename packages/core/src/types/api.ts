@@ -66,6 +66,8 @@ export interface JudgementRequest {
   wiki: string;
   revId: number;
   action: JudgementAction;
+  /** Additional revision IDs to apply the same judgement to (consecutive edits by same user). */
+  additionalRevIds?: number[];
 }
 
 /** POST /api/judgement — response */
@@ -114,12 +116,18 @@ export interface RevertCheckResponse {
   reason?: "not_logged_in" | "not_current" | "consecutive_edits";
   pageHistoryUrl?: string;
   consecutiveEditUser?: string;
+  /** Rev IDs of all consecutive edits by the same user (newest first). Length 1 for single edits. */
+  consecutiveRevIds?: number[];
+  /** The revision ID just before the consecutive run (the "undoafter" target for multi-revision revert). */
+  baseRevId?: number;
 }
 
 /** POST /api/revert */
 export interface RevertRequest {
   wiki: string;
   revId: number;
+  /** For multi-revision revert: the base revision to undo after (last rev by a different user). */
+  baseRevId?: number;
 }
 
 export interface RevertResponse {

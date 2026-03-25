@@ -20,10 +20,14 @@ function pageHistoryUrl(wiki: string, title: string): string {
 }
 
 /** Build the edit summary for a revert */
-function editSummary(revId: number, username: string, wiki: string, origin?: string): string {
+function editSummary(revIds: number[], username: string, wiki: string, origin?: string): string {
   const domain = origin ?? "https://doublecheck.wikiloop.org";
+  const revPart =
+    revIds.length === 1
+      ? `Reverted revision ${revIds[0]} by [[User:${username}]]`
+      : `Reverted ${revIds.length} consecutive edits by [[User:${username}]] (revisions ${revIds.join(", ")})`;
   return (
-    `Reverted revision ${revId} by [[User:${username}]]: ` +
+    `${revPart}: ` +
     `Revert made with [[m:WikiLoop DoubleCheck|WikiLoop DoubleCheck]] (${domain}), ` +
     `reviewer deemed the revision as damaging and possibly vandalism. ` +
     `Report abuse at [[Wikipedia talk:WikiLoop DoubleCheck]].`
@@ -31,10 +35,9 @@ function editSummary(revId: number, username: string, wiki: string, origin?: str
 }
 
 /**
- * Check eligibility: the revision must be the current (latest) revision,
- * and the author must have made only ONE consecutive edit (the last one).
- * If the second-from-last edit is also by the same user, direct revert is
- * disabled — the user is directed to the page history instead.
+ * Check eligibility: the revision must be the current (latest) revision.
+ * If the user made multiple consecutive edits, return them all so the
+ * client can show a combined diff and revert them as a group (rollback-style).
  */
 async function checkEligibility(
   wiki: string,
@@ -42,7 +45,7 @@ async function checkEligibility(
   title: string,
   revisionUser: string,
 ): Promise<RevertCheckResponse> {
-  const latest = await fetchPageLatestRevisions(wiki, title, 2);
+  const latest = await fetchPageLatestRevisions(wiki, title, 50);
   if (latest.length === 0) {
     return { eligible: false, reason: "not_current" };
   }
@@ -52,8 +55,16 @@ async function checkEligibility(
     return { eligible: false, reason: "not_current" };
   }
 
-  // If the second-from-last edit is also by the same user, consecutive edits
-  if (latest.length >= 2 && latest[1].user === revisionUser) {
+  // Walk newest-to-oldest to find all consecutive edits by the same user
+  let consecutiveCount = 0;
+  for (const rev of latest) {
+    if (rev.user === revisionUser) consecutiveCount++;
+    else break;
+  }
+
+  // Safety cap: if ALL fetched revisions are by the same user, we can't
+  // determine the base revision — fall back to "review page history"
+  if (consecutiveCount === latest.length && latest.length >= 50) {
     return {
       eligible: false,
       reason: "consecutive_edits",
@@ -62,6 +73,20 @@ async function checkEligibility(
     };
   }
 
+  const consecutiveRevIds = latest.slice(0, consecutiveCount).map((r) => r.revid);
+  const baseRev = latest[consecutiveCount]; // last rev by a different user
+
+  if (consecutiveCount >= 2 && baseRev) {
+    return {
+      eligible: true,
+      consecutiveEditUser: revisionUser,
+      consecutiveRevIds,
+      baseRevId: baseRev.revid,
+      pageHistoryUrl: pageHistoryUrl(wiki, title),
+    };
+  }
+
+  // Single edit — simple case
   return { eligible: true };
 }
 
@@ -137,20 +162,25 @@ revert.post("/", async (c) => {
 
     // Perform the undo — use the request origin so the summary shows the correct domain
     const origin = c.req.header("origin") ?? "https://doublecheck.wikiloop.org";
-    const summary = editSummary(body.revId, rev.user, body.wiki, origin);
+    const revIdsForSummary = eligibility.consecutiveRevIds ?? [body.revId];
+    const summary = editSummary(revIdsForSummary, rev.user, body.wiki, origin);
     const result = await performUndo(body.wiki, activeToken, {
       title: rev.title,
       revId: body.revId,
       summary,
       csrfToken,
+      undoafter: body.baseRevId,
     });
 
     if (result.success) {
-      // Mark the interaction as reverted (non-blocking)
-      InteractionModel.updateOne(
-        { revisionWiki: body.wiki, revisionId: body.revId, userId: session.userId },
-        { $set: { revertedByUser: true } },
-      ).catch(() => {});
+      // Mark all consecutive revisions as reverted (non-blocking)
+      const revIdsToMark = eligibility.consecutiveRevIds ?? [body.revId];
+      for (const rid of revIdsToMark) {
+        InteractionModel.updateOne(
+          { revisionWiki: body.wiki, revisionId: rid, userId: session.userId },
+          { $set: { revertedByUser: true } },
+        ).catch(() => {});
+      }
     }
 
     const status = result.success ? 200 : 422;

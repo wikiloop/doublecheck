@@ -92,7 +92,9 @@
   "Label-PageHistory": "page history",
   "Message-RevertSuccess": "Successfully reverted!",
   "Message-RevertFailed": "Revert failed",
-  "Message-ConsecutiveEdits": "User {user} made multiple consecutive edits on this page. Direct revert is not available — please review the",
+  "Message-ConsecutiveEdits": "User {user} made too many consecutive edits to safely revert in bulk — please review the",
+  "Message-ConsecutiveEditsCombinedDiff": "Showing combined diff of {count} consecutive edits by {user}.",
+  "Button-DirectRevertMultiple": "Revert {count} edits by {user}",
   "Message-NotCurrentRevision": "This edit is no longer the latest revision and cannot be directly reverted.",
   "Message-LoginToRevert": "Log in with your Wikipedia account to directly revert this edit."
 }

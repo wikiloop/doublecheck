@@ -9,6 +9,8 @@ const props = defineProps<{
   revId: number;
   revisionUser: string;
   title: string;
+  consecutiveRevIds?: number[];
+  baseRevId?: number;
 }>();
 
 const { t } = useI18n();
@@ -53,7 +55,11 @@ async function doRevert() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ wiki: props.wiki, revId: props.revId }),
+      body: JSON.stringify({
+        wiki: props.wiki,
+        revId: props.revId,
+        baseRevId: props.baseRevId ?? eligibility.value?.baseRevId,
+      }),
       signal: controller.signal,
     });
     revertResult.value = await res.json();
@@ -117,7 +123,15 @@ watch(
         :disabled="reverting"
         @click="doRevert"
       >
-        {{ reverting ? t("Label-Reverting") : t("Button-DirectRevert") }}
+        <template v-if="reverting">
+          {{ t("Label-Reverting") }}
+        </template>
+        <template v-else-if="eligibility.consecutiveRevIds && eligibility.consecutiveRevIds.length > 1">
+          {{ t("Button-DirectRevertMultiple", { count: eligibility.consecutiveRevIds.length, user: eligibility.consecutiveEditUser ?? revisionUser }) }}
+        </template>
+        <template v-else>
+          {{ t("Button-DirectRevert") }}
+        </template>
       </CdxButton>
     </template>
 
