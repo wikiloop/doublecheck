@@ -21,18 +21,12 @@ import { revert } from "./routes/revert.js";
 import { rankedFeed } from "./routes/rankedFeed.js";
 import { startRevertRiskStream } from "./lib/revertRiskStream.js";
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
 
-let PKG_VERSION = "unknown";
+let BUILD_VERSION = "unknown";
 try {
-  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
-  PKG_VERSION = pkg.version;
-} catch { /* bundled or no package.json accessible */ }
-
-let GIT_HASH = process.env.GIT_HASH ?? "";
-if (!GIT_HASH) {
-  try { GIT_HASH = execSync("git rev-parse --short=6 HEAD", { encoding: "utf8" }).trim(); } catch { /* not a git repo */ }
-}
+  const info = JSON.parse(readFileSync(new URL("../build-info.json", import.meta.url), "utf8"));
+  BUILD_VERSION = info.version ?? "unknown";
+} catch { /* no build-info.json */ }
 
 /** Create a Hono app with API routes only (no static file serving). */
 export function createApiApp(): Hono {
@@ -53,8 +47,7 @@ export function createApiApp(): Hono {
     const mongoConnected = mongoose.connection.readyState === 1;
     return c.json({
       status: "ok",
-      version: PKG_VERSION,
-      gitHash: GIT_HASH,
+      version: BUILD_VERSION,
       mongo: mongoConnected,
     });
   });

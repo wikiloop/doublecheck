@@ -36,8 +36,8 @@ export const API_PATHS = {
 /** GET /api/health */
 export interface HealthResponse {
   status: string;
+  /** e.g. "5.0.3-alpha.0+a1b2c3" */
   version: string;
-  gitHash: string;
   mongo: boolean;
 }
 

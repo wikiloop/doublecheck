@@ -87,7 +87,6 @@ describe("GET /api/health", () => {
     const body = await res.json();
     expect(body.status).toBe("ok");
     expect(typeof body.version).toBe("string");
-    expect(body.gitHash).toBeDefined();
     expect(body.mongo).toBe(true);
   });
 });

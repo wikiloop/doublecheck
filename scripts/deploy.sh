@@ -148,6 +148,11 @@ build_all() {
     return
   fi
 
+  # Write build-info.json with version+hash for the server health endpoint
+  local ver
+  ver=$(node -p "require('./package.json').version")
+  echo "{\"version\":\"${ver}+${GIT_HASH}\"}" > packages/server/build-info.json
+
   pnpm run build
   ok "Build complete"
 }

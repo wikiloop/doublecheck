@@ -112,3 +112,4 @@ reports
 .env.toolforge
 .vercel
 *.tsbuildinfo
+build-info.json

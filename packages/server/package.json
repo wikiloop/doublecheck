@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "prebuild": "node -e \"const v=require('./package.json').version;let h='';try{h=require('child_process').execSync('git rev-parse --short=6 HEAD',{encoding:'utf8'}).trim()}catch{};require('fs').writeFileSync('build-info.json',JSON.stringify({version:h?v+'+'+h:v}))\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
