@@ -17,6 +17,7 @@ import DiffBox from "../components/DiffBox.vue";
 import ActionPanel from "../components/ActionPanel.vue";
 import JudgementPanel from "../components/JudgementPanel.vue";
 import DirectRevertPanel from "../components/DirectRevertPanel.vue";
+import { useAuth } from "../composables/useAuth";
 
 const STREAM_URL =
   "https://stream.wikimedia.org/v2/stream/mediawiki.page_revert_risk_prediction_change.v1";
@@ -26,6 +27,7 @@ const CACHE_KEY = "dc-ranked-pool";
 
 const route = useRoute();
 const { t } = useI18n();
+const { user, isLoggedIn, checkAuth } = useAuth();
 
 const revision = ref<Revision | null>(null);
 const diffHtml = ref<string>("");
@@ -60,11 +62,31 @@ const consecutiveEditUser = ref<string | undefined>();
 
 // Page status: detect when the current revision's page gets new edits
 const pageStatus = ref<"current" | "reverted" | "new_edits" | null>(null);
+const revertedByUser = ref<string | undefined>();
 let pageStatusTimer: ReturnType<typeof setInterval> | null = null;
 
 let eventSource: EventSource | null = null;
 let initialPoolResolve: (() => void) | null = null;
 let initialPoolPromise: Promise<void> | null = null;
+
+/** Fetch the user's recently reviewed revision IDs from the server. */
+async function seedReviewedIds() {
+  try {
+    await checkAuth();
+    if (!isLoggedIn.value || !user.value) return;
+    const res = await fetch(
+      `/api/user/${user.value.userId}/reviewed-ids?limit=200`,
+      { credentials: "include" },
+    );
+    if (!res.ok) return;
+    const data: { ids: string[] } = await res.json();
+    for (const id of data.ids) {
+      reviewedIds.value.add(id);
+    }
+  } catch {
+    // Server unavailable — fall back to localStorage cache
+  }
+}
 
 /** Restore cached pool from localStorage for instant reload. */
 function restoreCachedPool(): boolean {
@@ -270,7 +292,7 @@ async function checkPageStatus() {
     }
 
     // Page has newer edits — check if our revision was reverted
-    const isRevert = page.revisions.some((r: { comment?: string }) => {
+    const reverter = page.revisions.find((r: { comment?: string; user?: string }) => {
       const c = (r.comment ?? "").toLowerCase();
       return (
         c.includes("revert") ||
@@ -281,7 +303,13 @@ async function checkPageStatus() {
       );
     });
 
-    pageStatus.value = isRevert ? "reverted" : "new_edits";
+    if (reverter) {
+      revertedByUser.value = reverter.user;
+      pageStatus.value = "reverted";
+    } else {
+      revertedByUser.value = undefined;
+      pageStatus.value = "new_edits";
+    }
   } catch {
     // Network error — ignore
   }
@@ -572,10 +600,11 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   const wiki = route.params.wiki as string | undefined;
   const revId = route.params.revId as string | undefined;
   if (wiki) selectedWiki.value = wiki;
+  await seedReviewedIds();
   loadRevision(wiki, revId);
   window.addEventListener("keydown", onKeydown);
 });
@@ -628,10 +657,10 @@ onUnmounted(() => {
 
       <CdxMessage
         v-if="pageStatus === 'reverted'"
-        type="warning"
+        type="success"
         class="dc-review-page__page-status"
       >
-        This revision appears to have been reverted by someone else. You can skip to the next one.
+        Good news! <strong>{{ revertedByUser ?? 'Someone' }}</strong> beat you to it, and already reverted it!
       </CdxMessage>
 
       <CdxMessage
@@ -682,8 +711,16 @@ onUnmounted(() => {
         />
       </div>
 
+      <CdxMessage
+        v-if="currentAction === 'ShouldRevert' && pageStatus === 'reverted'"
+        type="success"
+        class="dc-review-page__page-status"
+      >
+        Good news! <strong>{{ revertedByUser ?? 'Someone' }}</strong> beat you to it, and already reverted it!
+      </CdxMessage>
+
       <DirectRevertPanel
-        v-if="currentAction === 'ShouldRevert'"
+        v-if="currentAction === 'ShouldRevert' && pageStatus !== 'reverted'"
         :wiki="revision.wiki"
         :rev-id="revision.revId"
         :revision-user="revision.user"

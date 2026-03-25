@@ -45,4 +45,22 @@ userHistory.get("/:userId/history", async (c) => {
   return c.json(response);
 });
 
+/** GET /api/user/:userId/reviewed-ids — lightweight list of recently reviewed wiki:revId pairs */
+userHistory.get("/:userId/reviewed-ids", async (c) => {
+  const userId = c.req.param("userId");
+  const limit = Math.min(parseInt(c.req.query("limit") ?? "200", 10), 500);
+
+  const docs = await InteractionModel.find({ userId })
+    .sort({ _id: -1 })
+    .limit(limit)
+    .select("revisionWiki revisionId")
+    .lean();
+
+  const ids = docs.map(
+    (d: Record<string, unknown>) => `${d.revisionWiki}:${d.revisionId}`,
+  );
+
+  return c.json({ ids });
+});
+
 export { userHistory };
