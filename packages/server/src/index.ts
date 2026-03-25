@@ -20,6 +20,15 @@ import { events } from "./routes/events.js";
 import { revert } from "./routes/revert.js";
 import { rankedFeed } from "./routes/rankedFeed.js";
 import { startRevertRiskStream } from "./lib/revertRiskStream.js";
+import { execSync } from "node:child_process";
+import { createRequire } from "node:module";
+
+const _require = createRequire(import.meta.url);
+const PKG_VERSION: string = _require("@doublecheck/server/package.json").version ?? "unknown";
+let GIT_HASH = process.env.GIT_HASH ?? "";
+if (!GIT_HASH) {
+  try { GIT_HASH = execSync("git rev-parse --short=6 HEAD", { encoding: "utf8" }).trim(); } catch { /* not a git repo */ }
+}
 
 /** Create a Hono app with API routes only (no static file serving). */
 export function createApiApp(): Hono {
@@ -40,7 +49,8 @@ export function createApiApp(): Hono {
     const mongoConnected = mongoose.connection.readyState === 1;
     return c.json({
       status: "ok",
-      version: "5.0.0-alpha.0",
+      version: PKG_VERSION,
+      gitHash: GIT_HASH,
       mongo: mongoConnected,
     });
   });

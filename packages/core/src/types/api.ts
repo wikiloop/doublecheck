@@ -37,6 +37,7 @@ export const API_PATHS = {
 export interface HealthResponse {
   status: string;
   version: string;
+  gitHash: string;
   mongo: boolean;
 }
 

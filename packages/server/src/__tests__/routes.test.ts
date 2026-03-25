@@ -85,11 +85,10 @@ describe("GET /api/health", () => {
     const res = await req("/api/health");
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body).toEqual({
-      status: "ok",
-      version: "5.0.0-alpha.0",
-      mongo: true,
-    });
+    expect(body.status).toBe("ok");
+    expect(body.version).toBe("5.0.2-alpha.0");
+    expect(body.gitHash).toBeDefined();
+    expect(body.mongo).toBe(true);
   });
 });
 
