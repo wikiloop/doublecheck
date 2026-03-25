@@ -46,7 +46,7 @@ const submitting = ref(false);
 // Stream-based pool state
 const rankedPool = ref<ScoredRevision[]>([]);
 const reviewedIds = ref<Set<string>>(new Set());
-const poolLoading = ref(true);
+const poolLoading = ref(false);
 const selectedWiki = ref("enwiki");
 const streamConnected = ref(false);
 
