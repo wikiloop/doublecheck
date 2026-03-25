@@ -21,7 +21,8 @@ import DirectRevertPanel from "../components/DirectRevertPanel.vue";
 const STREAM_URL =
   "https://stream.wikimedia.org/v2/stream/mediawiki.page_revert_risk_prediction_change.v1";
 const POOL_MAX = 200;
-const MIN_POOL_BEFORE_SHOW = 5; // show first revision after accumulating this many
+const MIN_POOL_BEFORE_SHOW = 1; // show first revision as soon as we get one
+const CACHE_KEY = "dc-ranked-pool";
 
 const route = useRoute();
 const router = useRouter();
@@ -52,6 +53,36 @@ const streamConnected = ref(false);
 let eventSource: EventSource | null = null;
 let initialPoolResolve: (() => void) | null = null;
 let initialPoolPromise: Promise<void> | null = null;
+
+/** Restore cached pool from sessionStorage for instant second load. */
+function restoreCachedPool(): boolean {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return false;
+    const cached = JSON.parse(raw) as { pool: ScoredRevision[]; reviewed: string[]; wiki: string };
+    if (cached.wiki !== selectedWiki.value) return false;
+    // Only use cache if it has items and is less than 5 minutes old
+    if (cached.pool.length === 0) return false;
+    rankedPool.value = cached.pool;
+    reviewedIds.value = new Set(cached.reviewed);
+    return poolRemaining.value.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Save pool to sessionStorage. */
+function persistPool() {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+      pool: rankedPool.value.slice(0, 100), // keep cache small
+      reviewed: [...reviewedIds.value],
+      wiki: selectedWiki.value,
+    }));
+  } catch {
+    // storage full or unavailable
+  }
+}
 
 const poolRemaining = computed(() =>
   rankedPool.value.filter((r) => !reviewedIds.value.has(`${r.wiki}:${r.revId}`))
@@ -126,6 +157,7 @@ function startStream() {
       }
 
       rankedPool.value = pool;
+      persistPool();
 
       // Resolve initial pool promise once we have enough items
       if (initialPoolResolve && poolRemaining.value.length >= MIN_POOL_BEFORE_SHOW) {
@@ -159,13 +191,13 @@ function waitForInitialPool(): Promise<void> {
   if (!initialPoolPromise) {
     initialPoolPromise = new Promise<void>((resolve) => {
       initialPoolResolve = resolve;
-      // Timeout: don't wait forever, show whatever we have after 10s
+      // Timeout: don't wait forever, show whatever we have after 3s
       setTimeout(() => {
         if (initialPoolResolve) {
           initialPoolResolve();
           initialPoolResolve = null;
         }
-      }, 10_000);
+      }, 3_000);
     });
   }
   return initialPoolPromise;
@@ -246,12 +278,17 @@ async function loadRevision(wiki?: string, revId?: string | number) {
         }
       }
     } else {
-      // No specific revision — wait for stream pool, then show top item
+      // No specific revision — try cache first, then stream
       startStream();
-      poolLoading.value = true;
-      await waitForInitialPool();
-      poolLoading.value = false;
-      loadNextFromPool();
+      if (restoreCachedPool()) {
+        poolLoading.value = false;
+        loadNextFromPool();
+      } else {
+        poolLoading.value = true;
+        await waitForInitialPool();
+        poolLoading.value = false;
+        loadNextFromPool();
+      }
     }
   } catch {
     // API not available yet
@@ -308,6 +345,7 @@ async function onJudge(action: JudgementAction) {
 
     // Track this revision as reviewed
     reviewedIds.value.add(`${revision.value.wiki}:${revision.value.revId}`);
+    persistPool();
   } catch {
     // ignore
   } finally {

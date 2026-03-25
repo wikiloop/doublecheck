@@ -72,6 +72,11 @@ function addToBuffer(scored: ScoredRevision): void {
 export function startRevertRiskStream(): void {
   if (eventSource) return; // already running
 
+  if (typeof globalThis.EventSource === "undefined") {
+    console.warn("[RevertRiskStream] EventSource not available in this runtime, skipping server-side stream");
+    return;
+  }
+
   console.log("[RevertRiskStream] Connecting to Wikimedia EventStreams...");
 
   eventSource = new EventSource(STREAM_URL);
