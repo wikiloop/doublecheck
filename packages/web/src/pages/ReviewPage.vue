@@ -95,6 +95,21 @@ const poolRemaining = computed(() =>
   rankedPool.value.filter((r) => !reviewedIds.value.has(`${r.wiki}:${r.revId}`))
 );
 
+/**
+ * Compute a human-review priority score from raw revert risk.
+ * Very high risk (>0.95) gets auto-reverted by patrol bots — deprioritize.
+ * The sweet spot for human review is ~0.6-0.95 (under bot threshold but still risky).
+ */
+function humanPriorityScore(revertRisk: number): number {
+  if (revertRisk >= 0.95) {
+    // Above bot threshold: still include but rank below the sweet spot
+    // Maps 0.95-1.0 → 0.55-0.50 (below the gray zone)
+    return 0.55 - (revertRisk - 0.95) * 1.0;
+  }
+  // Below bot threshold: use raw score (higher risk = higher priority)
+  return revertRisk;
+}
+
 /** Parse a Wikimedia revert-risk prediction event into a ScoredRevision. */
 function parseStreamEvent(data: Record<string, unknown>): ScoredRevision | null {
   const wikiId = data.wiki_id as string | undefined;
@@ -126,7 +141,7 @@ function parseStreamEvent(data: Record<string, unknown>): ScoredRevision | null 
       modelName: prediction.model_name as string | undefined,
       modelVersion: prediction.model_version as string | undefined,
     },
-    rankScore: revertRiskProb,
+    rankScore: humanPriorityScore(revertRiskProb),
   };
 }
 
@@ -291,6 +306,9 @@ async function loadRevision(wiki?: string, revId?: string | number) {
           lazyLoadLiftWing(wiki, Number(revId));
         }
       }
+      // Start stream in background so pool fills for Next button
+      restoreCachedPool();
+      startStream();
     } else {
       // No specific revision — try cache first for instant display
       const hasCache = restoreCachedPool();
@@ -373,7 +391,19 @@ async function onJudge(action: JudgementAction) {
   }
 }
 
-function loadNext() {
+async function loadNext() {
+  // Mark current revision as reviewed so pool skips it
+  if (revision.value) {
+    reviewedIds.value.add(`${revision.value.wiki}:${revision.value.revId}`);
+    persistPool();
+  }
+  if (poolRemaining.value.length === 0) {
+    // Pool empty — wait for stream to deliver something
+    poolLoading.value = true;
+    initialPoolPromise = null; // reset so waitForInitialPool creates a fresh promise
+    await waitForInitialPool();
+    poolLoading.value = false;
+  }
   loadNextFromPool();
 }
 

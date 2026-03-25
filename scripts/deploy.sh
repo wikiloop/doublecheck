@@ -207,7 +207,8 @@ deploy_vercel() {
     return
   fi
 
-  # Generate Vercel build output from locally built dist/web
+  # Pull project settings, build locally, deploy prebuilt
+  npx vercel pull --yes 2>&1 | tail -3
   npx vercel build --prod 2>&1 | tail -5
   npx vercel deploy --prebuilt --prod 2>&1 | tail -3
   ok "Vercel deployed"
