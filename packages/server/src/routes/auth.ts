@@ -103,8 +103,12 @@ auth.get("/callback", async (c) => {
     return c.json({ error: "Token exchange failed", detail: errorBody }, 502);
   }
 
-  const tokenData = (await tokenRes.json()) as { access_token?: string };
+  const tokenData = (await tokenRes.json()) as {
+    access_token?: string;
+    refresh_token?: string;
+  };
   const accessToken = tokenData.access_token;
+  const refreshToken = tokenData.refresh_token;
   if (!accessToken) {
     return c.json({ error: "No access token received" }, 502);
   }
@@ -151,6 +155,7 @@ auth.get("/callback", async (c) => {
     username,
     identity: { type: "named", username, verified: true },
     accessToken,
+    refreshToken,
   });
 
   return c.redirect(returnTo);

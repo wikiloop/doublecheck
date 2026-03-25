@@ -15,6 +15,7 @@ const sessionSchema = new Schema(
       verified: { type: Boolean, default: false },
     },
     accessToken: { type: String },
+    refreshToken: { type: String },
     expiresAt: { type: Date, required: true },
   },
   { timestamps: true },

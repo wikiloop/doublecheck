@@ -11,6 +11,7 @@ export interface SessionData {
     verified: boolean;
   };
   accessToken?: string;
+  refreshToken?: string;
 }
 
 const SESSION_COOKIE = "dc_session";
@@ -43,6 +44,7 @@ export async function getSession(c: Context): Promise<SessionData | null> {
       username: string;
       identity: SessionData["identity"];
       accessToken?: string;
+      refreshToken?: string;
     }>();
     if (!doc) return null;
 
@@ -51,6 +53,7 @@ export async function getSession(c: Context): Promise<SessionData | null> {
       username: doc.username,
       identity: doc.identity,
       accessToken: doc.accessToken,
+      refreshToken: doc.refreshToken,
     };
     sessionCache.set(sessionId, data);
     return data;
@@ -87,6 +90,30 @@ export async function setSession(c: Context, data: SessionData): Promise<void> {
     maxAge: SESSION_MAX_AGE,
     path: "/",
   });
+}
+
+/** Update the access (and optionally refresh) token on an existing session */
+export async function updateSessionTokens(
+  c: Context,
+  newAccessToken: string,
+  newRefreshToken?: string,
+): Promise<void> {
+  const sessionId = getCookie(c, SESSION_COOKIE);
+  if (!sessionId) return;
+
+  const cached = sessionCache.get(sessionId);
+  if (cached) {
+    cached.accessToken = newAccessToken;
+    if (newRefreshToken) cached.refreshToken = newRefreshToken;
+  }
+
+  try {
+    const update: Record<string, string> = { accessToken: newAccessToken };
+    if (newRefreshToken) update.refreshToken = newRefreshToken;
+    await SessionModel.updateOne({ sessionId }, { $set: update });
+  } catch {
+    // best-effort
+  }
 }
 
 export async function clearSession(c: Context): Promise<void> {

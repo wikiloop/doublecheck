@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { RevertRequest, RevertCheckResponse, RevertResponse } from "@doublecheck/core";
-import { getSession } from "../middleware/session.js";
+import { getSession, updateSessionTokens } from "../middleware/session.js";
 import { InteractionModel } from "../db/models/index.js";
 import {
   apiUrl,
@@ -8,6 +8,7 @@ import {
   fetchPageLatestRevisions,
   fetchCsrfToken,
   performUndo,
+  refreshAccessToken,
 } from "../lib/mediawiki.js";
 
 const revert = new Hono();
@@ -111,11 +112,25 @@ revert.post("/", async (c) => {
       );
     }
 
-    // Get CSRF token
-    const csrfToken = await fetchCsrfToken(body.wiki, session.accessToken);
+    // Get CSRF token — if it fails, try refreshing the OAuth token once
+    let activeToken = session.accessToken;
+    let csrfToken = await fetchCsrfToken(body.wiki, activeToken);
+
+    if (!csrfToken && session.refreshToken) {
+      const refreshed = await refreshAccessToken(session.refreshToken);
+      if (refreshed) {
+        activeToken = refreshed.accessToken;
+        csrfToken = await fetchCsrfToken(body.wiki, activeToken);
+        // Persist the new tokens so future requests don't need to refresh again
+        if (csrfToken) {
+          await updateSessionTokens(c, refreshed.accessToken, refreshed.refreshToken);
+        }
+      }
+    }
+
     if (!csrfToken) {
       return c.json<RevertResponse>(
-        { success: false, error: "Failed to obtain edit token — session may have expired", errorCode: "token_failed" },
+        { success: false, error: "Failed to obtain edit token — please log out and log in again", errorCode: "token_failed" },
         401,
       );
     }
@@ -123,7 +138,7 @@ revert.post("/", async (c) => {
     // Perform the undo — use the request origin so the summary shows the correct domain
     const origin = c.req.header("origin") ?? "https://doublecheck.wikiloop.org";
     const summary = editSummary(body.revId, rev.user, body.wiki, origin);
-    const result = await performUndo(body.wiki, session.accessToken, {
+    const result = await performUndo(body.wiki, activeToken, {
       title: rev.title,
       revId: body.revId,
       summary,

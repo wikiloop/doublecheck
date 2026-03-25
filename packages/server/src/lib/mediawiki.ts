@@ -239,6 +239,42 @@ export async function performUndo(
   };
 }
 
+/** Refresh an expired OAuth2 access token using a refresh token */
+export async function refreshAccessToken(
+  refreshToken: string,
+): Promise<{ accessToken: string; refreshToken?: string } | null> {
+  const clientId = process.env.OAUTH_CLIENT_ID;
+  const clientSecret = process.env.OAUTH_CLIENT_SECRET;
+  if (!clientId || !clientSecret || !refreshToken) return null;
+
+  const res = await fetchWithTimeout(
+    "https://meta.wikimedia.org/w/rest.php/oauth2/access_token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret,
+      }).toString(),
+    },
+  );
+
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as {
+    access_token?: string;
+    refresh_token?: string;
+  };
+  if (!data.access_token) return null;
+
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+  };
+}
+
 /** Verify a MediaWiki access token by calling userinfo */
 export async function verifyMWToken(
   accessToken: string,
