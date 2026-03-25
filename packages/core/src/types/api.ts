@@ -82,6 +82,8 @@ export interface LeaderboardEntry {
   userId: string;
   username: string;
   count: number;
+  articleCount: number;
+  lastReview: string | null;
   rank: number;
 }
 

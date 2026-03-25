@@ -31,6 +31,8 @@ vi.mock("../db/models/index.js", () => ({
     create: vi.fn(),
     find: vi.fn(),
     aggregate: vi.fn(),
+    findOneAndUpdate: vi.fn(),
+    updateOne: vi.fn().mockResolvedValue(undefined),
   },
   UserModel: {
     find: vi.fn(),
@@ -209,18 +211,18 @@ describe("GET /api/feed/:feedName", () => {
 
 describe("POST /api/judgement", () => {
   beforeEach(() => {
-    vi.mocked(InteractionModel.create).mockReset();
+    vi.mocked(InteractionModel.findOneAndUpdate).mockReset();
   });
 
   it("creates a judgement and returns 201", async () => {
-    vi.mocked(InteractionModel.create).mockResolvedValue({
+    vi.mocked(InteractionModel.findOneAndUpdate).mockResolvedValue({
       revisionWiki: "enwiki",
       revisionId: 123,
       action: "LooksGood",
       userId: "anonymous",
       identity: { type: "anon", username: null, verified: false },
       createdAt: new Date("2024-01-01T00:00:00Z"),
-    } as unknown as Awaited<ReturnType<typeof InteractionModel.create>>);
+    } as unknown as Awaited<ReturnType<typeof InteractionModel.findOneAndUpdate>>);
 
     const res = await req("/api/judgement", {
       method: "POST",

@@ -42,6 +42,9 @@ const currentAction = ref<JudgementAction | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
 
+// History stack for Prev navigation
+const revisionHistory = ref<ScoredRevision[]>([]);
+
 // Stream-based pool state
 const rankedPool = ref<ScoredRevision[]>([]);
 const reviewedIds = ref<Set<string>>(new Set());
@@ -404,6 +407,12 @@ function loadNextFromPool() {
   const remaining = poolRemaining.value;
   if (remaining.length === 0) return;
 
+  // Push current revision onto history stack for Prev navigation
+  if (revision.value) {
+    const cur = revision.value as ScoredRevision;
+    revisionHistory.value.push(cur);
+  }
+
   const next = remaining[0];
   revision.value = next;
   revertRiskScore.value = next.revertRisk;
@@ -474,6 +483,24 @@ async function loadNext() {
   loadNextFromPool();
 }
 
+function loadPrev() {
+  if (revisionHistory.value.length === 0) return;
+  const prev = revisionHistory.value.pop()!;
+  revision.value = prev;
+  revertRiskScore.value = prev.revertRisk;
+  liftWingScore.value = prev.liftWing;
+  currentAction.value = null;
+  tallies.value = { ShouldRevert: 0, NotSure: 0, LooksGood: 0 };
+  fetchDiff(prev.wiki, prev.revId, prev.parentRevId ?? 0);
+  loadJudgements(prev.wiki, prev.revId);
+  if (!prev.liftWing) {
+    lazyLoadLiftWing(prev.wiki, prev.revId);
+  }
+  startPageStatusPolling();
+}
+
+const hasPrev = computed(() => revisionHistory.value.length > 0);
+
 function onKeydown(e: KeyboardEvent) {
   // Ignore when typing in an input/textarea
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -490,6 +517,12 @@ function onKeydown(e: KeyboardEvent) {
       break;
     case "g":
       onJudge("LooksGood");
+      break;
+    case "arrowright":
+      loadNext();
+      break;
+    case "arrowleft":
+      loadPrev();
       break;
   }
 }
@@ -606,11 +639,19 @@ onUnmounted(() => {
 
       <div class="dc-review-page__nav">
         <CdxButton
+          v-if="hasPrev"
+          action="progressive"
+          weight="quiet"
+          @click="loadPrev"
+        >
+          &larr; Prev
+        </CdxButton>
+        <CdxButton
           action="progressive"
           weight="primary"
           @click="loadNext"
         >
-          {{ t("Button-Next") }}
+          Next &rarr;
         </CdxButton>
       </div>
     </template>
@@ -625,7 +666,7 @@ onUnmounted(() => {
         weight="primary"
         @click="loadNext"
       >
-        {{ t("Button-Next") }}
+        Next &rarr;
       </CdxButton>
     </div>
   </div>
@@ -701,6 +742,7 @@ onUnmounted(() => {
 .dc-review-page__nav {
   display: flex;
   justify-content: center;
+  gap: 0.5rem;
   padding: 1rem 0;
 }
 

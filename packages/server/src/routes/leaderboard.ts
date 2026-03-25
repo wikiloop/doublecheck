@@ -50,6 +50,17 @@ leaderboard.get("/", async (c) => {
       $group: {
         _id: "$_user",
         count: { $sum: 1 },
+        // Count distinct articles (unique wiki+revId combos)
+        _articles: {
+          $addToSet: {
+            $concat: [
+              { $ifNull: ["$revisionWiki", { $ifNull: ["$wiki", ""] }] },
+              ":",
+              { $toString: { $ifNull: ["$revisionId", 0] } },
+            ],
+          },
+        },
+        lastReview: { $max: "$_time" },
       },
     },
     { $sort: { count: -1 as const } },
@@ -59,10 +70,12 @@ leaderboard.get("/", async (c) => {
   const results = await InteractionModel.aggregate(pipeline);
 
   const entries = results.map(
-    (r: { _id: string; count: number }, index: number) => ({
+    (r: { _id: string; count: number; _articles: string[]; lastReview: Date | null }, index: number) => ({
       userId: r._id,
       username: r._id,
       count: r.count,
+      articleCount: r._articles?.length ?? 0,
+      lastReview: r.lastReview?.toISOString?.() ?? null,
       rank: index + 1,
     }),
   );

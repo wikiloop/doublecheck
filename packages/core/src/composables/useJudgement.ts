@@ -56,12 +56,17 @@ export function useJudgement(wiki: Ref<string> | string, revId: Ref<number> | nu
         revId: revIdVal,
         action,
       });
+      const previousAction = userAction.value;
       userAction.value = result.action;
-      // Update tallies locally
-      tallies.value = {
-        ...tallies.value,
-        [action]: (tallies.value[action] ?? 0) + 1,
-      };
+      // Update tallies locally — decrement previous vote if changing judgement
+      const updated = { ...tallies.value };
+      if (previousAction && previousAction !== action && updated[previousAction] > 0) {
+        updated[previousAction]--;
+      }
+      if (!previousAction || previousAction !== action) {
+        updated[action] = (updated[action] ?? 0) + 1;
+      }
+      tallies.value = updated;
     } catch (err: unknown) {
       error.value = err instanceof Error ? err : new Error(String(err));
     } finally {

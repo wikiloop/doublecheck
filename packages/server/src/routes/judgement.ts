@@ -46,13 +46,22 @@ judgement.post("/", async (c) => {
 
   const now = new Date().toISOString();
 
-  const interaction = await InteractionModel.create({
-    revisionWiki: body.wiki,
-    revisionId: body.revId,
-    action: body.action,
-    userId,
-    identity,
-  });
+  // Upsert: if the same user already judged this revision, update their judgement
+  const interaction = await InteractionModel.findOneAndUpdate(
+    { revisionWiki: body.wiki, revisionId: body.revId, userId },
+    {
+      $set: {
+        action: body.action,
+        identity,
+      },
+      $setOnInsert: {
+        revisionWiki: body.wiki,
+        revisionId: body.revId,
+        userId,
+      },
+    },
+    { upsert: true, new: true, timestamps: true },
+  );
 
   const response: JudgementResponse = {
     revisionWiki: body.wiki,
@@ -111,15 +120,22 @@ judgement.get("/:wiki/:revId", async (c) => {
       (doc.timestamp ? new Date((doc.timestamp as number) * 1000).toISOString() : ""),
   }));
 
-  // Calculate tallies
+  // Calculate tallies — deduplicate per user, keeping only the latest judgement
+  const latestByUser = new Map<string, JudgementAction>();
+  for (const j of judgements) {
+    // judgements are sorted newest-first, so the first per user is their latest
+    if (!latestByUser.has(j.userId)) {
+      latestByUser.set(j.userId, j.action);
+    }
+  }
   const tallies: Record<JudgementAction, number> = {
     ShouldRevert: 0,
     NotSure: 0,
     LooksGood: 0,
   };
-  for (const j of judgements) {
-    if (tallies[j.action] !== undefined) {
-      tallies[j.action]++;
+  for (const action of latestByUser.values()) {
+    if (tallies[action] !== undefined) {
+      tallies[action]++;
     }
   }
 

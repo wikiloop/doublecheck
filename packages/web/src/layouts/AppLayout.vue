@@ -55,6 +55,13 @@ const gitHash = __GIT_HASH__;
         </nav>
         <div class="dc-auth">
           <template v-if="isLoggedIn && user">
+            <img
+              :src="`https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(user.username)}&size=24`"
+              :alt="user.username"
+              class="dc-header-avatar"
+              width="24"
+              height="24"
+            >
             <span class="dc-username">{{ user.username }}</span>
             <CdxButton
               weight="quiet"
@@ -88,7 +95,7 @@ const gitHash = __GIT_HASH__;
           target="_blank"
           rel="noopener"
         >
-          GitHub
+          Source code
         </a>
         <a
           href="https://meta.wikimedia.org/wiki/WikiLoop"
@@ -168,6 +175,11 @@ const gitHash = __GIT_HASH__;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.dc-header-avatar {
+  border-radius: 50%;
+  background: var(--background-color-neutral);
 }
 
 .dc-username {

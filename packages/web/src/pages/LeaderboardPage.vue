@@ -4,13 +4,36 @@ import { useI18n } from "vue-i18n";
 import { CdxButton } from "@wikimedia/codex";
 import type { LeaderboardEntry, LeaderboardResponse } from "@doublecheck/core";
 
+function avatarUrl(username: string): string {
+  return `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(username)}&size=28`;
+}
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(days / 365);
+  return `${years}y ago`;
+}
+
 const { t } = useI18n();
 
 type TimePeriod = "day" | "week" | "month" | "all";
 
 const entries = ref<LeaderboardEntry[]>([]);
 const loading = ref(false);
-const period = ref<TimePeriod>("week");
+const period = ref<TimePeriod>("month");
 
 const periodLabels: Record<TimePeriod, string> = {
   day: "Label-Day",
@@ -75,7 +98,9 @@ watch(period, loadLeaderboard);
         <tr>
           <th>{{ t("Label-Rank") }}</th>
           <th>{{ t("Label-User") }}</th>
-          <th>{{ t("Label-CountOfJudgements") }}</th>
+          <th>{{ t("Label-Reviews") }}</th>
+          <th>{{ t("Label-Articles") }}</th>
+          <th>{{ t("Label-LatestReview") }}</th>
         </tr>
       </thead>
       <tbody>
@@ -86,9 +111,24 @@ watch(period, loadLeaderboard);
           <td class="dc-rank">
             {{ entry.rank }}
           </td>
-          <td>{{ entry.username }}</td>
+          <td class="dc-user-cell">
+            <img
+              :src="avatarUrl(entry.username)"
+              :alt="entry.username"
+              class="dc-avatar"
+              width="28"
+              height="28"
+            >
+            {{ entry.username }}
+          </td>
           <td class="dc-count">
             {{ entry.count }}
+          </td>
+          <td class="dc-count">
+            {{ entry.articleCount }}
+          </td>
+          <td class="dc-time">
+            {{ timeAgo(entry.lastReview) }}
           </td>
         </tr>
       </tbody>
@@ -155,5 +195,23 @@ watch(period, loadLeaderboard);
 
 .dc-count {
   font-variant-numeric: tabular-nums;
+}
+
+.dc-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dc-avatar {
+  border-radius: 50%;
+  background: var(--background-color-neutral);
+  flex-shrink: 0;
+}
+
+.dc-time {
+  color: var(--color-subtle);
+  font-size: 0.9em;
+  white-space: nowrap;
 }
 </style>

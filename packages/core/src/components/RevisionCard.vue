@@ -33,6 +33,13 @@ function pct(value: number): string {
         <span class="dc-revision-card__title">{{ props.revision.title }}</span>
       </div>
       <div class="dc-revision-card__meta">
+        <img
+          :src="`https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(props.revision.user)}&size=20`"
+          :alt="props.revision.user"
+          class="dc-revision-card__avatar"
+          width="20"
+          height="20"
+        >
         <span class="dc-revision-card__user">{{ props.revision.user }}</span>
         <time
           class="dc-revision-card__time"
@@ -134,10 +141,17 @@ function pct(value: number): string {
 
 .dc-revision-card__meta {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   font-size: 0.9em;
   color: var(--dc-text-subtle, #54595d);
   margin-bottom: 8px;
+}
+
+.dc-revision-card__avatar {
+  border-radius: 50%;
+  background: var(--dc-tag-bg, #eaecf0);
+  flex-shrink: 0;
 }
 
 .dc-revision-card__comment {
