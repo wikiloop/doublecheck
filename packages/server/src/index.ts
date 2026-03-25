@@ -73,18 +73,21 @@ export function createApiApp(): Hono {
 export function createApp(): Hono {
   const app = createApiApp();
 
+  // Resolve paths relative to repo root (three levels up from packages/server/src)
+  const repoRoot = new URL("../../../", import.meta.url).pathname;
+
   // Serve userscript for direct installation
   app.use(
     "/doublecheck.user.js",
     serveStatic({
-      root: "./packages/userscript",
+      root: repoRoot + "packages/userscript",
       path: "wikiloop-doublecheck.user.js",
     }),
   );
 
   // Serve Vue SPA static files
-  app.use("/*", serveStatic({ root: "./dist/web" }));
-  app.use("/*", serveStatic({ root: "./dist/web", path: "index.html" }));
+  app.use("/*", serveStatic({ root: repoRoot + "dist/web" }));
+  app.use("/*", serveStatic({ root: repoRoot + "dist/web", path: "index.html" }));
 
   return app;
 }

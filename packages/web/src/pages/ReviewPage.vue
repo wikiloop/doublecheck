@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, onMounted, onUnmounted, computed } from "vue";
+import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type {
   Revision,
@@ -25,7 +25,6 @@ const MIN_POOL_BEFORE_SHOW = 1; // show first revision as soon as we get one
 const CACHE_KEY = "dc-ranked-pool";
 
 const route = useRoute();
-const router = useRouter();
 const { t } = useI18n();
 
 const revision = ref<Revision | null>(null);
@@ -47,6 +46,7 @@ const submitting = ref(false);
 const rankedPool = ref<ScoredRevision[]>([]);
 const reviewedIds = ref<Set<string>>(new Set());
 const poolLoading = ref(false);
+const poolStreamStatus = ref<"connecting" | "waiting" | "ready">("connecting");
 const selectedWiki = ref("enwiki");
 const streamConnected = ref(false);
 
@@ -54,15 +54,21 @@ let eventSource: EventSource | null = null;
 let initialPoolResolve: (() => void) | null = null;
 let initialPoolPromise: Promise<void> | null = null;
 
-/** Restore cached pool from sessionStorage for instant second load. */
+/** Restore cached pool from localStorage for instant reload. */
 function restoreCachedPool(): boolean {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return false;
-    const cached = JSON.parse(raw) as { pool: ScoredRevision[]; reviewed: string[]; wiki: string };
+    const cached = JSON.parse(raw) as {
+      pool: ScoredRevision[];
+      reviewed: string[];
+      wiki: string;
+      ts: number;
+    };
     if (cached.wiki !== selectedWiki.value) return false;
-    // Only use cache if it has items and is less than 5 minutes old
     if (cached.pool.length === 0) return false;
+    // Expire cache after 30 minutes
+    if (cached.ts && Date.now() - cached.ts > 30 * 60 * 1000) return false;
     rankedPool.value = cached.pool;
     reviewedIds.value = new Set(cached.reviewed);
     return poolRemaining.value.length > 0;
@@ -71,13 +77,14 @@ function restoreCachedPool(): boolean {
   }
 }
 
-/** Save pool to sessionStorage. */
+/** Save pool to localStorage so it survives page reloads. */
 function persistPool() {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
       pool: rankedPool.value.slice(0, 100), // keep cache small
       reviewed: [...reviewedIds.value],
       wiki: selectedWiki.value,
+      ts: Date.now(),
     }));
   } catch {
     // storage full or unavailable
@@ -127,11 +134,15 @@ function parseStreamEvent(data: Record<string, unknown>): ScoredRevision | null 
 function startStream() {
   if (eventSource) return;
 
+  poolStreamStatus.value = "connecting";
   eventSource = new EventSource(STREAM_URL);
   streamConnected.value = false;
 
   eventSource.onopen = () => {
     streamConnected.value = true;
+    if (poolStreamStatus.value === "connecting") {
+      poolStreamStatus.value = "waiting";
+    }
   };
 
   eventSource.onmessage = (event) => {
@@ -234,7 +245,10 @@ async function fetchDiff(wiki: string, revId: number, parentRevId: number) {
     const res = await fetch(url.toString());
     if (res.ok) {
       const data = await res.json();
-      diffHtml.value = data?.compare?.body ?? "";
+      const body = data?.compare?.body ?? "";
+      diffHtml.value = body
+        ? `<table class="diff diff-contentalign-ltr"><tbody>${body}</tbody></table>`
+        : "";
     }
   } catch {
     // MediaWiki API unavailable
@@ -278,15 +292,20 @@ async function loadRevision(wiki?: string, revId?: string | number) {
         }
       }
     } else {
-      // No specific revision — try cache first, then stream
+      // No specific revision — try cache first for instant display
+      const hasCache = restoreCachedPool();
+      // Always start stream in background to replenish pool
       startStream();
-      if (restoreCachedPool()) {
+      if (hasCache) {
         poolLoading.value = false;
+        poolStreamStatus.value = "ready";
         loadNextFromPool();
       } else {
         poolLoading.value = true;
+        poolStreamStatus.value = "connecting";
         await waitForInitialPool();
         poolLoading.value = false;
+        poolStreamStatus.value = "ready";
         loadNextFromPool();
       }
     }
@@ -305,10 +324,11 @@ function loadNextFromPool() {
   revision.value = next;
   revertRiskScore.value = next.revertRisk;
   liftWingScore.value = next.liftWing;
-  router.replace(`/review/${next.wiki}/${next.revId}`);
+  currentAction.value = null;
+  tallies.value = { ShouldRevert: 0, NotSure: 0, LooksGood: 0 };
+  // Stay on /review — no URL redirect
   fetchDiff(next.wiki, next.revId, next.parentRevId ?? 0);
   loadJudgements(next.wiki, next.revId);
-  // Lazy-load detailed damaging/goodfaith scores
   if (!next.liftWing) {
     lazyLoadLiftWing(next.wiki, next.revId);
   }
@@ -390,14 +410,7 @@ onUnmounted(() => {
   window.removeEventListener("keydown", onKeydown);
 });
 
-watch(
-  () => [route.params.wiki, route.params.revId],
-  ([wiki, revId]) => {
-    if (wiki && revId) {
-      loadRevision(wiki as string, revId as string);
-    }
-  }
-);
+// Direct revision URLs (/review/enwiki/12345) still work via onMounted
 </script>
 
 <template>
@@ -411,7 +424,19 @@ watch(
       v-if="loading || poolLoading"
       class="dc-review-page__loading"
     >
-      {{ poolLoading ? 'Receiving revisions from stream...' : t("Label-Loading") }}...
+      <div class="dc-review-page__loading-spinner" />
+      <p v-if="poolStreamStatus === 'connecting'">
+        Connecting to Wikimedia stream...
+      </p>
+      <p v-else-if="poolStreamStatus === 'waiting'">
+        Connected. Waiting for revisions (usually a few seconds)...
+      </p>
+      <p v-else>
+        {{ t("Label-Loading") }}...
+      </p>
+      <p class="dc-review-page__loading-hint">
+        Listening for new edits on {{ selectedWiki }}
+      </p>
     </div>
 
     <template v-else-if="revision">
@@ -504,6 +529,28 @@ watch(
   text-align: center;
   padding: 3rem 1rem;
   color: var(--color-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dc-review-page__loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color-subtle);
+  border-top-color: var(--color-progressive);
+  border-radius: 50%;
+  animation: dc-spin 0.8s linear infinite;
+}
+
+@keyframes dc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.dc-review-page__loading-hint {
+  font-size: 0.8rem;
+  color: var(--color-placeholder);
 }
 
 .dc-review-page__pool-status {
