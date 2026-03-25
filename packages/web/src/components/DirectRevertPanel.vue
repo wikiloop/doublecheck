@@ -13,6 +13,12 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+function revertRevisionUrl(newRevId: number): string {
+  const match = props.wiki.match(/^(\w+)wiki$/);
+  const base = match ? `https://${match[1]}.wikipedia.org` : `https://${props.wiki}`;
+  return `${base}/w/index.php?diff=${newRevId}`;
+}
+
 const checking = ref(false);
 const eligibility = ref<RevertCheckResponse | null>(null);
 const reverting = ref(false);
@@ -80,7 +86,11 @@ watch(
     >
       {{ t("Message-RevertSuccess") }}
       <template v-if="revertResult.newRevId">
-        (rev {{ revertResult.newRevId }})
+        (<a
+          :href="revertRevisionUrl(revertResult.newRevId)"
+          target="_blank"
+          rel="noopener"
+        >rev {{ revertResult.newRevId }}</a>)
       </template>
     </CdxMessage>
 

@@ -2,7 +2,7 @@
 // TODO: replace with @doublecheck/core component when available
 import type { RevisionCardProps } from "@doublecheck/core";
 
-defineProps<RevisionCardProps>();
+const props = defineProps<RevisionCardProps>();
 
 function formatScore(score: number): string {
   return (score * 100).toFixed(0) + "%";
@@ -12,6 +12,27 @@ function scoreColor(score: number): string {
   if (score >= 0.7) return "var(--color-destructive)";
   if (score >= 0.4) return "var(--color-warning)";
   return "var(--color-success)";
+}
+
+function wikiBaseUrl(wiki: string): string {
+  const match = wiki.match(/^(\w+)wiki$/);
+  if (match) return `https://${match[1]}.wikipedia.org`;
+  return `https://${wiki}`;
+}
+
+function articleUrl(): string {
+  const base = wikiBaseUrl(props.revision.wiki);
+  return `${base}/wiki/${encodeURIComponent(props.revision.title.replace(/ /g, "_"))}`;
+}
+
+function revisionUrl(): string {
+  const base = wikiBaseUrl(props.revision.wiki);
+  return `${base}/w/index.php?diff=${props.revision.revId}`;
+}
+
+function userUrl(): string {
+  const base = wikiBaseUrl(props.revision.wiki);
+  return `${base}/wiki/User:${encodeURIComponent(props.revision.user)}`;
 }
 </script>
 
@@ -26,13 +47,27 @@ function scoreColor(score: number): string {
     <template v-else>
       <div class="dc-revision-card__header">
         <h3 class="dc-revision-card__title">
-          {{ revision.title }}
+          <a
+            :href="articleUrl()"
+            target="_blank"
+            rel="noopener"
+          >{{ revision.title }}</a>
         </h3>
         <span class="dc-revision-card__wiki">{{ revision.wiki }}</span>
       </div>
       <div class="dc-revision-card__meta">
-        <span>Rev {{ revision.revId }}</span>
-        <span>by {{ revision.user }}</span>
+        <a
+          :href="revisionUrl()"
+          target="_blank"
+          rel="noopener"
+        >Rev {{ revision.revId }}</a>
+        <span>by
+          <a
+            :href="userUrl()"
+            target="_blank"
+            rel="noopener"
+          >{{ revision.user }}</a>
+        </span>
         <span>{{ revision.timestamp }}</span>
       </div>
       <p
@@ -43,7 +78,7 @@ function scoreColor(score: number): string {
       </p>
       <div class="dc-revision-card__scores">
         <span v-if="revertRiskScore">
-          Revert risk:
+          Revert likelihood:
           <strong :style="{ color: scoreColor(revertRiskScore.revertRisk) }">
             {{ formatScore(revertRiskScore.revertRisk) }}
           </strong>
@@ -96,6 +131,17 @@ function scoreColor(score: number): string {
 .dc-revision-card__title {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.dc-revision-card__title a,
+.dc-revision-card__meta a {
+  color: var(--color-progressive);
+  text-decoration: none;
+}
+
+.dc-revision-card__title a:hover,
+.dc-revision-card__meta a:hover {
+  text-decoration: underline;
 }
 
 .dc-revision-card__wiki {

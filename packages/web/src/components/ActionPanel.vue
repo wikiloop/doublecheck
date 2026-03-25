@@ -10,10 +10,10 @@ const { t } = useI18n();
 defineProps<ActionPanelProps>();
 const emit = defineEmits<{ judge: [action: JudgementAction] }>();
 
-const actions: { key: JudgementAction; label: string; color: string }[] = [
-  { key: "ShouldRevert", label: "Label-ShouldRevert", color: "var(--color-destructive)" },
-  { key: "NotSure", label: "Label-NotSure", color: "var(--color-placeholder)" },
-  { key: "LooksGood", label: "Label-LooksGood", color: "var(--color-success)" },
+const actions: { key: JudgementAction; label: string; color: string; shortcut: string }[] = [
+  { key: "ShouldRevert", label: "Label-ShouldRevert", color: "var(--color-destructive)", shortcut: "R" },
+  { key: "NotSure", label: "Label-NotSure", color: "var(--color-placeholder)", shortcut: "N" },
+  { key: "LooksGood", label: "Label-LooksGood", color: "var(--color-success)", shortcut: "G" },
 ];
 </script>
 
@@ -32,6 +32,7 @@ const actions: { key: JudgementAction; label: string; color: string }[] = [
         @click="emit('judge', action.key)"
       >
         {{ t(action.label) }}
+        <kbd class="dc-action-panel__kbd">{{ action.shortcut }}</kbd>
       </CdxButton>
     </div>
   </div>
@@ -54,5 +55,17 @@ const actions: { key: JudgementAction; label: string; color: string }[] = [
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.dc-action-panel__kbd {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0 0.3em;
+  font-size: 0.75em;
+  font-family: inherit;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.6;
+  line-height: 1.4;
 }
 </style>

@@ -40,7 +40,7 @@ step()  { echo -e "\n${BOLD}==> $*${NC}"; }
 
 # ─── Parse arguments ─────────────────────────────────────────────────────────
 TARGETS=()
-BUMP="patch"
+BUMP="minor"
 DO_PUSH=true
 DRY_RUN=false
 
@@ -87,11 +87,10 @@ bump_version() {
     return
   fi
 
-  # Parse semver (strip pre-release tag for bump, re-add after)
-  local base prerelease=""
+  # Parse semver (strip any pre-release tag — we no longer use them)
+  local base
   if [[ "$current" == *-* ]]; then
     base="${current%%-*}"
-    prerelease="-${current#*-}"
   else
     base="$current"
   fi
@@ -99,8 +98,8 @@ bump_version() {
   IFS='.' read -r major minor patch <<< "$base"
 
   case "$BUMP" in
-    patch) new="$major.$minor.$((patch + 1))${prerelease}" ;;
-    minor) new="$major.$((minor + 1)).0${prerelease}" ;;
+    patch) new="$major.$minor.$((patch + 1))" ;;
+    minor) new="$major.$((minor + 1)).0" ;;
     *)     err "Invalid bump type: $BUMP (use patch or minor)"; exit 1 ;;
   esac
 

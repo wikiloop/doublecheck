@@ -357,15 +357,37 @@ function loadNext() {
   loadNextFromPool();
 }
 
+function onKeydown(e: KeyboardEvent) {
+  // Ignore when typing in an input/textarea
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  if (!revision.value || submitting.value) return;
+
+  switch (e.key.toLowerCase()) {
+    case "r":
+      onJudge("ShouldRevert");
+      break;
+    case "n":
+      // N = Not Sure + advance to next
+      onJudge("NotSure");
+      loadNext();
+      break;
+    case "g":
+      onJudge("LooksGood");
+      break;
+  }
+}
+
 onMounted(() => {
   const wiki = route.params.wiki as string | undefined;
   const revId = route.params.revId as string | undefined;
   if (wiki) selectedWiki.value = wiki;
   loadRevision(wiki, revId);
+  window.addEventListener("keydown", onKeydown);
 });
 
 onUnmounted(() => {
   stopStream();
+  window.removeEventListener("keydown", onKeydown);
 });
 
 watch(
@@ -414,6 +436,9 @@ watch(
       <DiffBox
         :diff-html="diffHtml"
         :loading="diffLoading"
+        :wiki="revision.wiki"
+        :rev-id="revision.revId"
+        :parent-rev-id="revision.parentRevId"
         class="dc-review-page__diff"
       />
 

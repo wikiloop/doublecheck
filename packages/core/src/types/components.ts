@@ -20,6 +20,9 @@ export interface RevisionCardProps {
 export interface DiffBoxProps {
   diffHtml: string;
   loading?: boolean;
+  wiki?: string;
+  revId?: number;
+  parentRevId?: number;
 }
 
 /** Props for the ActionPanel component. */
