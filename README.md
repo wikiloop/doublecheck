@@ -8,8 +8,7 @@ WikiLoop DoubleCheck was originally developed at Google (as `google/wikiloop-dou
 
 **[Start Reviewing](https://doublecheck.wikiloop.org/review)** | **[Install UserScript](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Chrome Extension](https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn)** | **[Wikipedia Project Page](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Discord](https://discord.gg/daZXxPB)**
 
-<!-- TODO: Add review flow GIF here -->
-<!-- ![Review flow demo](docs/review-demo.gif) -->
+![Review flow demo](docs/review-demo.gif)
 
 ## What's New in v5
 
