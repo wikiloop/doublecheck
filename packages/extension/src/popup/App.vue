@@ -121,6 +121,24 @@ function formatTime(timestamp: string): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
+
+const onWikipedia = ref(false);
+
+onMounted(async () => {
+  // Check if current tab is on Wikipedia
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    onWikipedia.value = !!tab?.url && /^https:\/\/\w+\.wikipedia\.org\//.test(tab.url);
+  } catch { /* no permission */ }
+});
+
+async function startReviewing(): Promise<void> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab?.id) {
+    await chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL });
+  }
+  window.close();
+}
 </script>
 
 <template>
@@ -164,6 +182,19 @@ function formatTime(timestamp: string): string {
             Login with Wikipedia
           </button>
         </template>
+      </section>
+
+      <!-- Start Reviewing (on Wikipedia pages) -->
+      <section
+        v-if="onWikipedia"
+        class="dc-popup-section dc-popup-review"
+      >
+        <button
+          class="dc-popup-btn dc-popup-btn--review"
+          @click="startReviewing"
+        >
+          Start Reviewing
+        </button>
       </section>
 
       <!-- Recent Activity -->
@@ -389,6 +420,26 @@ function formatTime(timestamp: string): string {
 
 .dc-popup-links a:hover {
   text-decoration: underline;
+}
+
+.dc-popup-review {
+  text-align: center;
+  padding: 16px;
+}
+
+.dc-popup-btn--review {
+  width: 100%;
+  padding: 10px 16px;
+  background: #3366cc;
+  color: #fff;
+  border-color: #3366cc;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.dc-popup-btn--review:hover {
+  background: #2a4b8d;
 }
 
 .dc-popup-footer {
