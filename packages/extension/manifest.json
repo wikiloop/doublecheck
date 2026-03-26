@@ -42,10 +42,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.wikipedia.org/w/index.php?*diff=*",
-        "https://*.wikipedia.org/wiki/Special:Diff/*",
-        "https://*.wikipedia.org/wiki/Special:RecentChanges*",
-        "https://*.wikipedia.org/wiki/Special:Watchlist*"
+        "https://*.wikipedia.org/*"
       ],
       "js": [
         "content.js"

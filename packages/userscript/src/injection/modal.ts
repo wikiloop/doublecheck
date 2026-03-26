@@ -72,7 +72,10 @@ export function openReviewModal(wiki: string, revId: number): void {
 
   // Iframe
   const iframe = document.createElement("iframe");
-  iframe.src = `${WEB_APP_BASE}/review/${encodeURIComponent(wiki)}/${revId}?embed=true`;
+  // revId=0 means open the general review feed
+  iframe.src = revId
+    ? `${WEB_APP_BASE}/review/${encodeURIComponent(wiki)}/${revId}?embed=true`
+    : `${WEB_APP_BASE}/review?embed=true`;
   Object.assign(iframe.style, {
     width: "100%",
     height: "100%",

@@ -83,14 +83,14 @@ describe("detectPageType", () => {
     expect(detectPageType()).toBe("watchlist");
   });
 
-  it("returns unknown for unrecognized pages", () => {
+  it("returns other for unrecognized pages", () => {
     Object.defineProperty(window, "location", {
       value: { ...window.location, href: "https://en.wikipedia.org/wiki/Main_Page" },
       writable: true,
     });
 
     setupMwGlobal();
-    expect(detectPageType()).toBe("unknown");
+    expect(detectPageType()).toBe("other");
   });
 });
 

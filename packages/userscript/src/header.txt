@@ -3,10 +3,7 @@
 // @version      5.6.1
 // @description  Crowdsourced vandalism review for Wikipedia
 // @namespace    https://doublecheck.wikiloop.org
-// @match        *://*.wikipedia.org/w/index.php?*diff=*
-// @match        *://*.wikipedia.org/wiki/Special:Diff/*
-// @match        *://*.wikipedia.org/wiki/Special:RecentChanges*
-// @match        *://*.wikipedia.org/wiki/Special:Watchlist*
+// @match        *://*.wikipedia.org/*
 // @grant        none
 // @license      MIT
 // ==/UserScript==

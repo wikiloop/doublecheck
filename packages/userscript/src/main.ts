@@ -5,7 +5,6 @@ import { initI18n } from "./i18n.js";
 import "./styles/panel.css";
 import "./styles/badges.css";
 
-const VENDOR_BASE = "https://wikiloop-doublecheck.toolforge.org/vendor";
 const LOG_PREFIX = "[DoubleCheck]";
 
 /**
@@ -24,33 +23,22 @@ function hasRLModule(name: string): boolean {
  * Load Vue via ResourceLoader if available, otherwise from self-hosted vendor.
  */
 async function ensureVue(): Promise<typeof import("vue")> {
-  // Check if Vue is already globally available
   if (window.Vue) return window.Vue;
 
-  // Try ResourceLoader first
   if (hasRLModule("vue")) {
     try {
       await mw.loader.using(["vue"]);
       if (window.Vue) return window.Vue;
     } catch {
-      console.warn(`${LOG_PREFIX} ResourceLoader failed to load vue, trying vendor fallback`);
+      console.warn(`${LOG_PREFIX} ResourceLoader failed to load vue`);
     }
   }
 
-  // Self-hosted fallback
-  try {
-    await loadScript(`${VENDOR_BASE}/vue.global.prod.js`);
-    if (window.Vue) return window.Vue;
-  } catch {
-    // CSP or network error
-  }
-
-  throw new Error(`${LOG_PREFIX} Could not load Vue — cannot initialize`);
+  throw new Error(`${LOG_PREFIX} Could not load Vue`);
 }
 
 /**
  * Dynamically load an external script.
- * Rejects if CSP blocks the script or it fails to load.
  */
 function loadScript(src: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
@@ -64,17 +52,15 @@ function loadScript(src: string): Promise<void> {
 }
 
 /**
- * Detect which page type we're on and bootstrap accordingly.
+ * Detect which page type we're on.
  */
-function detectPageType(): "diff" | "recentchanges" | "watchlist" | "unknown" {
+function detectPageType(): "diff" | "recentchanges" | "watchlist" | "other" {
   const url = window.location.href;
 
-  // Check for diff pages
   if (url.includes("Special:Diff/") || url.includes("diff=")) {
     return "diff";
   }
 
-  // Check for RecentChanges
   try {
     const specialPage = mw.config.get("wgCanonicalSpecialPageName") as string | null;
     if (specialPage === "Recentchanges") return "recentchanges";
@@ -86,7 +72,92 @@ function detectPageType(): "diff" | "recentchanges" | "watchlist" | "unknown" {
   if (url.includes("Special:RecentChanges")) return "recentchanges";
   if (url.includes("Special:Watchlist")) return "watchlist";
 
-  return "unknown";
+  return "other";
+}
+
+/**
+ * Add a "DoubleCheck" link to the Wikipedia toolbar (like Twinkle does).
+ * Uses mw.util.addPortletLink for native integration.
+ */
+function addToolbarLink(): void {
+  try {
+    mw.loader.using(["mediawiki.util"], () => {
+      const pageType = detectPageType();
+
+      if (pageType === "diff") {
+        // On diff pages: open review modal for this specific revision
+        const link = mw.util.addPortletLink(
+          "p-cactions",
+          "#",
+          "DoubleCheck",
+          "ca-doublecheck",
+          "Review this edit with WikiLoop DoubleCheck",
+        );
+        if (link) {
+          link.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const { mountDiffPanel } = await import("./injection/diff-panel.js");
+            mountDiffPanel();
+            // Also open the modal immediately
+            const { openReviewModal } = await import("./injection/modal.js");
+            const wiki = getWikiId();
+            const revId = getRevisionId();
+            if (revId) openReviewModal(wiki, revId);
+          });
+        }
+      } else {
+        // On all other pages: open the review feed
+        const link = mw.util.addPortletLink(
+          "p-cactions",
+          "#",
+          "DoubleCheck",
+          "ca-doublecheck",
+          "Open WikiLoop DoubleCheck review feed",
+        );
+        if (link) {
+          link.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const { openReviewModal } = await import("./injection/modal.js");
+            const wiki = getWikiId();
+            openReviewModal(wiki, 0); // 0 = no specific revision, opens feed
+          });
+        }
+      }
+    });
+  } catch (err) {
+    console.warn(`${LOG_PREFIX} Could not add toolbar link:`, err);
+  }
+}
+
+/** Get wiki ID from the current page. */
+function getWikiId(): string {
+  try {
+    const dbName = mw.config.get("wgDBname") as string;
+    return dbName || "enwiki";
+  } catch {
+    const host = window.location.hostname;
+    const match = host.match(/^(\w+)\.wikipedia\.org$/);
+    return match ? `${match[1]}wiki` : "enwiki";
+  }
+}
+
+/** Get the revision ID from the current page (diff pages only). */
+function getRevisionId(): number | null {
+  try {
+    const diffNewId = mw.config.get("wgDiffNewId") as number | null;
+    if (diffNewId) return diffNewId;
+    const revId = mw.config.get("wgRevisionId") as number;
+    if (revId) return revId;
+  } catch { /* fall through */ }
+
+  const url = new URL(window.location.href);
+  const diffParam = url.searchParams.get("diff");
+  if (diffParam) return parseInt(diffParam, 10) || null;
+
+  const pathMatch = url.pathname.match(/Special:Diff\/(\d+)/);
+  if (pathMatch) return parseInt(pathMatch[1], 10) || null;
+
+  return null;
 }
 
 /**
@@ -96,30 +167,24 @@ async function bootstrap(): Promise<void> {
   initI18n();
 
   const pageType = detectPageType();
-  if (pageType === "unknown") return;
 
-  try {
-    await ensureVue();
-  } catch (err) {
-    console.warn(`${LOG_PREFIX} ${err instanceof Error ? err.message : err}`);
-    console.warn(`${LOG_PREFIX} Aborting — no DOM injection will occur`);
-    return;
-  }
+  // Always add toolbar link on every Wikipedia page
+  addToolbarLink();
 
   if (pageType === "diff") {
-    // Diff pages: inject floating button (no Vue needed — review UI is in the iframe)
+    // Diff pages: floating button + toolbar link
     const { mountDiffPanel } = await import("./injection/diff-panel.js");
     mountDiffPanel();
-  } else {
-    // RC/Watchlist: inject risk badges + click to open review modal
+  } else if (pageType === "recentchanges" || pageType === "watchlist") {
+    // RC/Watchlist: risk badges on edit rows
     try {
-      await ensureVue();
+      const { injectBadges } = await import("./injection/badges.js");
+      await injectBadges();
     } catch (err) {
-      console.warn(`${LOG_PREFIX} ${err instanceof Error ? err.message : err}`);
+      console.warn(`${LOG_PREFIX} Badge injection failed:`, err);
     }
-    const { injectBadges } = await import("./injection/badges.js");
-    await injectBadges();
   }
+  // On all other pages: toolbar link is already added above
 }
 
 // Wait for DOM to be ready, then bootstrap
