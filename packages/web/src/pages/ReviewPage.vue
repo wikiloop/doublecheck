@@ -17,6 +17,8 @@ import DiffBox from "../components/DiffBox.vue";
 import ActionPanel from "../components/ActionPanel.vue";
 import JudgementPanel from "../components/JudgementPanel.vue";
 import DirectRevertPanel from "../components/DirectRevertPanel.vue";
+import ThankAuthorPanel from "../components/ThankAuthorPanel.vue";
+import GoogleSearchPanel from "../components/GoogleSearchPanel.vue";
 import { useAuth } from "../composables/useAuth";
 
 const STREAM_URL =
@@ -727,6 +729,19 @@ onUnmounted(() => {
         :title="revision.title"
         :consecutive-rev-ids="consecutiveRevIds"
         :base-rev-id="baseRevId"
+      />
+
+      <ThankAuthorPanel
+        v-if="currentAction === 'LooksGood'"
+        :wiki="revision.wiki"
+        :rev-id="revision.revId"
+        :revision-user="revision.user"
+      />
+
+      <GoogleSearchPanel
+        v-if="currentAction === 'NotSure'"
+        :title="revision.title"
+        :comment="revision.comment"
       />
 
       <div class="dc-review-page__nav">

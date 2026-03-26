@@ -23,6 +23,7 @@ export const API_PATHS = {
   liftWing: "/api/liftwing/:wiki/:revId",
   revertCheck: "/api/revert/check/:wiki/:revId",
   revert: "/api/revert",
+  thank: "/api/thank",
   authLogin: "/api/auth/login",
   authCallback: "/api/auth/callback",
   authMe: "/api/auth/me",
@@ -135,6 +136,21 @@ export interface RevertResponse {
   newRevId?: number;
   error?: string;
   errorCode?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Thank endpoint types
+// ---------------------------------------------------------------------------
+
+/** POST /api/thank */
+export interface ThankRequest {
+  wiki: string;
+  revId: number;
+}
+
+export interface ThankResponse {
+  success: boolean;
+  error?: string;
 }
 
 // ---------------------------------------------------------------------------

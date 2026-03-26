@@ -18,6 +18,7 @@ import { liftwing } from "./routes/liftwing.js";
 import { auth } from "./routes/auth.js";
 import { events } from "./routes/events.js";
 import { revert } from "./routes/revert.js";
+import { thank } from "./routes/thank.js";
 import { rankedFeed } from "./routes/rankedFeed.js";
 import { startRevertRiskStream } from "./lib/revertRiskStream.js";
 import { readFileSync } from "node:fs";
@@ -40,6 +41,7 @@ export function createApiApp(): Hono {
   // Rate limiting: writes (POST) get stricter limits
   app.use("/api/judgement", writeLimiter);
   app.use("/api/revert", writeLimiter);
+  app.use("/api/thank", writeLimiter);
   app.use("/api/*", readLimiter);
 
   // Health check
@@ -65,6 +67,7 @@ export function createApiApp(): Hono {
   app.route("/auth", auth); // OAuth callback registered at /auth/callback
   app.route("/api/events", events);
   app.route("/api/revert", revert);
+  app.route("/api/thank", thank);
 
   return app;
 }

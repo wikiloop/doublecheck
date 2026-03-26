@@ -281,6 +281,50 @@ export async function refreshAccessToken(
   };
 }
 
+/** Append a new section to a user's talk page via action=edit&section=new */
+export async function appendTalkPageSection(
+  wiki: string,
+  accessToken: string,
+  params: { userTalkPage: string; sectionTitle: string; body: string; csrfToken: string },
+): Promise<{ success: boolean; error?: string }> {
+  const url = new URL(apiUrl(wiki));
+
+  const formBody = new URLSearchParams();
+  formBody.set("action", "edit");
+  formBody.set("title", params.userTalkPage);
+  formBody.set("section", "new");
+  formBody.set("sectiontitle", params.sectionTitle);
+  formBody.set("appendtext", params.body);
+  formBody.set("token", params.csrfToken);
+  formBody.set("format", "json");
+  formBody.set("formatversion", "2");
+
+  const res = await fetchWithTimeout(
+    url.toString(),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": USER_AGENT,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formBody.toString(),
+    },
+    20_000,
+  );
+
+  const data = await res.json();
+
+  if (data?.edit?.result === "Success") {
+    return { success: true };
+  }
+
+  return {
+    success: false,
+    error: data?.error?.info ?? data?.edit?.result ?? "Unknown error",
+  };
+}
+
 /** Verify a MediaWiki access token by calling userinfo */
 export async function verifyMWToken(
   accessToken: string,

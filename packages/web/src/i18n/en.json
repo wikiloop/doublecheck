@@ -96,5 +96,12 @@
   "Message-ConsecutiveEditsCombinedDiff": "Showing combined diff of {count} consecutive edits by {user}.",
   "Button-DirectRevertMultiple": "Revert {count} edits by {user}",
   "Message-NotCurrentRevision": "This edit is no longer the latest revision and cannot be directly reverted.",
-  "Message-LoginToRevert": "Log in with your Wikipedia account to directly revert this edit."
+  "Message-LoginToRevert": "Log in with your Wikipedia account to directly revert this edit.",
+  "Button-ThankAuthor": "Thank {user}",
+  "Label-Thanking": "Posting thank you...",
+  "Label-ViewUserPage": "View user page",
+  "Message-ThankSuccess": "Thank-you message posted to the author's talk page!",
+  "Message-ThankFailed": "Failed to post thank-you message",
+  "Message-LoginToThank": "Log in with your Wikipedia account to thank the author.",
+  "Button-SearchGoogle": "Search on Google"
 }
