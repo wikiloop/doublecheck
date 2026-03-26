@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WikiLoop DoubleCheck",
-  "version": "5.7.1",
+  "version": "5.7.2",
   "description": "Crowdsourced vandalism review for Wikipedia",
   "permissions": [
     "activeTab",

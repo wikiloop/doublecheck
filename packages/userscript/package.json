@@ -1,6 +1,6 @@
 {
   "name": "@doublecheck/userscript",
-  "version": "5.7.1",
+  "version": "5.7.2",
   "private": true,
   "type": "module",
   "scripts": {

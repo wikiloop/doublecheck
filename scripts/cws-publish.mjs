@@ -113,31 +113,61 @@ if (infoRes.ok) {
     console.log(`📈 Upgrading: ${publishedVersion} → ${localVersion}`);
   }
 
-  // If a prior submission is pending review, uploading a new zip will supersede it.
-  // The CWS API automatically cancels the pending review when a new upload is received.
-  if (draftStatus === 'PENDING_REVIEW' || draftStatus === 'IN_REVIEW') {
-    console.log(`⏳ Prior submission is ${draftStatus} — the new upload will supersede it.`);
+}
+
+// ─── Upload (with retry for pending review) ─────────────────────────────────
+
+const CWS_DASHBOARD = `https://chrome.google.com/webstore/devconsole/`;
+const MAX_RETRIES = 12;       // 12 × 10s = 2 minutes
+const RETRY_INTERVAL = 10000; // 10 seconds
+
+async function attemptUpload() {
+  const zipData = readFileSync(zipPath);
+
+  const uploadRes = await fetch(`${CWS_API}/${EXTENSION_ID}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'x-goog-api-version': '2',
+    },
+    body: zipData,
+  });
+
+  return uploadRes.json();
+}
+
+console.log('\n📤 Uploading to Chrome Web Store...');
+let uploadResult = await attemptUpload();
+
+// If blocked by pending review, prompt user to dequeue and poll-retry
+if (uploadResult.uploadState === 'FAILURE' &&
+    uploadResult.itemError?.some(e => e.error_code === 'ITEM_NOT_UPDATABLE')) {
+  console.log('\n⚠️  Upload blocked — a prior version is pending review.');
+  console.log('   Please dequeue it from the CWS Developer Dashboard:');
+  console.log(`   ${CWS_DASHBOARD}`);
+  console.log(`   → Find "WikiLoop DoubleCheck" → Package tab → Dequeue\n`);
+
+  // Try to open dashboard in browser (best-effort)
+  try { execSync(`open "${CWS_DASHBOARD}" 2>/dev/null || xdg-open "${CWS_DASHBOARD}" 2>/dev/null || true`); } catch {}
+
+  console.log(`⏳ Polling every 10s for up to 2 minutes (dequeue in the dashboard, I'll retry)...\n`);
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    await new Promise(r => setTimeout(r, RETRY_INTERVAL));
+    process.stdout.write(`   Retry ${attempt}/${MAX_RETRIES}... `);
+    uploadResult = await attemptUpload();
+
+    if (uploadResult.uploadState !== 'FAILURE' ||
+        !uploadResult.itemError?.some(e => e.error_code === 'ITEM_NOT_UPDATABLE')) {
+      console.log('✅ Upload accepted!');
+      break;
+    }
+    console.log('still blocked');
   }
 }
 
-// ─── Upload ─────────────────────────────────────────────────────────────────
-console.log('\n📤 Uploading to Chrome Web Store...');
-
-const zipData = readFileSync(zipPath);
-
-const uploadRes = await fetch(`${CWS_API}/${EXTENSION_ID}`, {
-  method: 'PUT',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'x-goog-api-version': '2',
-  },
-  body: zipData,
-});
-
-const uploadResult = await uploadRes.json();
-
 if (uploadResult.uploadState === 'FAILURE') {
-  console.error('❌ Upload failed:');
+  console.error('\n❌ Upload failed:');
   console.error(JSON.stringify(uploadResult, null, 2));
   process.exit(1);
 }
