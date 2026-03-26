@@ -712,6 +712,11 @@ onUnmounted(() => {
         :loading="false"
       />
 
+      <TagArticlePanel
+        :wiki="revision.wiki"
+        :title="revision.title"
+      />
+
       <DiffBox
         :diff-html="diffHtml"
         :loading="diffLoading"
@@ -765,11 +770,6 @@ onUnmounted(() => {
         v-if="currentAction === 'NotSure'"
         :title="revision.title"
         :comment="revision.comment"
-      />
-
-      <TagArticlePanel
-        :wiki="revision.wiki"
-        :title="revision.title"
       />
 
       <div class="dc-review-page__nav">
