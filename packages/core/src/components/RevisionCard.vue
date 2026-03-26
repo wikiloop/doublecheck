@@ -1,111 +1,118 @@
 <script setup lang="ts">
-import type { RevisionCardProps } from "../types/index.js";
+// TODO: replace with @doublecheck/core component when available
+import type { RevisionCardProps } from "@doublecheck/core";
 
-const props = withDefaults(defineProps<RevisionCardProps>(), {
-  loading: false,
-});
+const props = defineProps<RevisionCardProps>();
 
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
+function formatScore(score: number): string {
+  return (score * 100).toFixed(0) + "%";
 }
 
-function pct(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
+function scoreColor(score: number): string {
+  if (score >= 0.7) return "var(--color-destructive)";
+  if (score >= 0.4) return "var(--color-warning)";
+  return "var(--color-success)";
+}
+
+function wikiBaseUrl(wiki: string): string {
+  const match = wiki.match(/^(\w+)wiki$/);
+  if (match) return `https://${match[1]}.wikipedia.org`;
+  return `https://${wiki}`;
+}
+
+function articleUrl(): string {
+  const base = wikiBaseUrl(props.revision.wiki);
+  return `${base}/wiki/${encodeURIComponent(props.revision.title.replace(/ /g, "_"))}`;
+}
+
+function revisionUrl(): string {
+  const base = wikiBaseUrl(props.revision.wiki);
+  return `${base}/w/index.php?diff=${props.revision.revId}`;
+}
+
+function userUrl(): string {
+  const base = wikiBaseUrl(props.revision.wiki);
+  return `${base}/wiki/User:${encodeURIComponent(props.revision.user)}`;
 }
 </script>
 
 <template>
   <div class="dc-revision-card">
-    <template v-if="props.loading">
-      <div class="dc-revision-card__skeleton">
-        <div class="dc-skeleton-line dc-skeleton-line--wide" />
-        <div class="dc-skeleton-line dc-skeleton-line--medium" />
-        <div class="dc-skeleton-line dc-skeleton-line--narrow" />
-      </div>
-    </template>
+    <div
+      v-if="loading"
+      class="dc-revision-card__loading"
+    >
+      Loading revision...
+    </div>
     <template v-else>
       <div class="dc-revision-card__header">
-        <span class="dc-revision-card__wiki">{{ props.revision.wiki }}</span>
-        <span class="dc-revision-card__title">{{ props.revision.title }}</span>
+        <h3 class="dc-revision-card__title">
+          <a
+            :href="articleUrl()"
+            target="_blank"
+            rel="noopener"
+          >{{ revision.title }}</a>
+        </h3>
+        <span class="dc-revision-card__wiki">{{ revision.wiki }}</span>
       </div>
       <div class="dc-revision-card__meta">
-        <img
-          :src="`https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(props.revision.user)}&size=20`"
-          :alt="props.revision.user"
-          class="dc-revision-card__avatar"
-          width="20"
-          height="20"
-        >
-        <span class="dc-revision-card__user">{{ props.revision.user }}</span>
-        <time
-          class="dc-revision-card__time"
-          :datetime="props.revision.timestamp"
-        >
-          {{ formatDate(props.revision.timestamp) }}
-        </time>
+        <a
+          :href="revisionUrl()"
+          target="_blank"
+          rel="noopener"
+        >Rev {{ revision.revId }}</a>
+        <span>by
+          <a
+            :href="userUrl()"
+            target="_blank"
+            rel="noopener"
+          >{{ revision.user }}</a>
+        </span>
+        <span>{{ revision.timestamp }}</span>
       </div>
       <p
-        v-if="props.revision.comment"
+        v-if="revision.comment"
         class="dc-revision-card__comment"
       >
-        {{ props.revision.comment }}
+        {{ revision.comment }}
       </p>
-      <div
-        v-if="props.revertRiskScore || props.liftWingScore || props.liftWingLoading"
-        class="dc-revision-card__scores"
-      >
-        <div
-          v-if="props.revertRiskScore"
-          class="dc-score"
+      <div class="dc-revision-card__scores">
+        <span
+          v-if="revertRiskScore"
+          class="dc-revision-card__score"
           title="Revert Risk prediction from Wikimedia EventStream (revert_risk_prediction model)"
         >
-          <label class="dc-score__label">Revert risk</label>
-          <div class="dc-score__bar">
-            <div
-              class="dc-score__fill dc-score__fill--revert-risk"
-              :style="{ width: pct(props.revertRiskScore.revertRisk) }"
-            />
-          </div>
-          <span class="dc-score__value">{{ pct(props.revertRiskScore.revertRisk) }}</span>
-        </div>
-        <template v-if="props.liftWingScore">
-          <div
-            class="dc-score"
+          Revert likelihood:
+          <strong :style="{ color: scoreColor(revertRiskScore.revertRisk) }">
+            {{ formatScore(revertRiskScore.revertRisk) }}
+          </strong>
+        </span>
+        <template v-if="liftWingScore">
+          <span
+            class="dc-revision-card__score"
             title="Damaging score from Wikimedia LiftWing API (editquality/damaging model)"
           >
-            <label class="dc-score__label">Damaging</label>
-            <div class="dc-score__bar">
-              <div
-                class="dc-score__fill dc-score__fill--damaging"
-                :style="{ width: pct(props.liftWingScore.damaging) }"
-              />
-            </div>
-            <span class="dc-score__value">{{ pct(props.liftWingScore.damaging) }}</span>
-          </div>
-          <div
-            class="dc-score"
+            Damaging:
+            <strong :style="{ color: scoreColor(liftWingScore.damaging) }">
+              {{ formatScore(liftWingScore.damaging) }}
+            </strong>
+          </span>
+          <span
+            class="dc-revision-card__score"
             title="Bad faith score from Wikimedia LiftWing API (editquality/goodfaith model, inverted)"
           >
-            <label class="dc-score__label">Bad faith</label>
-            <div class="dc-score__bar">
-              <div
-                class="dc-score__fill dc-score__fill--badfaith"
-                :style="{ width: pct(1 - props.liftWingScore.goodfaith) }"
-              />
-            </div>
-            <span class="dc-score__value">{{ pct(1 - props.liftWingScore.goodfaith) }}</span>
-          </div>
+            Bad faith:
+            <strong :style="{ color: scoreColor(1 - liftWingScore.goodfaith) }">
+              {{ formatScore(1 - liftWingScore.goodfaith) }}
+            </strong>
+          </span>
         </template>
-        <div
-          v-else-if="props.liftWingLoading"
-          class="dc-score dc-score--loading"
+        <span
+          v-else-if="liftWingLoading"
+          class="dc-revision-card__scores-loading"
         >
-          <div class="dc-skeleton-line dc-skeleton-line--wide" />
-        </div>
+          Loading detail scores...
+        </span>
       </div>
     </template>
   </div>
@@ -113,124 +120,76 @@ function pct(value: number): string {
 
 <style scoped>
 .dc-revision-card {
-  padding: var(--dc-spacing-md, 16px);
-  border: 1px solid var(--dc-border-color, #a2a9b1);
-  border-radius: var(--dc-border-radius, 4px);
-  background: var(--dc-surface-color, #fff);
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 4px;
+  padding: 1rem;
+  background: var(--background-color-base);
+}
+
+.dc-revision-card__loading {
+  color: var(--color-placeholder);
+  font-style: italic;
 }
 
 .dc-revision-card__header {
   display: flex;
-  gap: 8px;
   align-items: baseline;
-  margin-bottom: 8px;
-}
-
-.dc-revision-card__wiki {
-  font-size: 0.85em;
-  color: var(--dc-text-subtle, #54595d);
-  background: var(--dc-tag-bg, #eaecf0);
-  padding: 2px 6px;
-  border-radius: 3px;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .dc-revision-card__title {
-  font-weight: 600;
-  color: var(--dc-text-color, #202122);
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dc-revision-card__title a,
+.dc-revision-card__meta a {
+  color: var(--color-progressive);
+  text-decoration: none;
+}
+
+.dc-revision-card__title a:hover,
+.dc-revision-card__meta a:hover {
+  text-decoration: underline;
+}
+
+.dc-revision-card__wiki {
+  background: var(--background-color-neutral);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
 }
 
 .dc-revision-card__meta {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9em;
-  color: var(--dc-text-subtle, #54595d);
-  margin-bottom: 8px;
-}
-
-.dc-revision-card__avatar {
-  border-radius: 50%;
-  background: var(--dc-tag-bg, #eaecf0);
-  flex-shrink: 0;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--color-subtle);
+  margin-top: 0.5rem;
 }
 
 .dc-revision-card__comment {
+  font-size: 0.9rem;
+  color: var(--color-base);
+  margin: 0.5rem 0 0;
   font-style: italic;
-  color: var(--dc-text-subtle, #54595d);
-  margin: 8px 0;
 }
 
 .dc-revision-card__scores {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
 }
 
-.dc-score {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.dc-revision-card__score {
   cursor: help;
+  border-bottom: 1px dotted var(--color-subtle);
 }
 
-.dc-score__label {
-  width: 80px;
-  font-size: 0.85em;
-}
-
-.dc-score__bar {
-  flex: 1;
-  height: 8px;
-  background: var(--dc-score-bar-bg, #eaecf0);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.dc-score__fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s;
-}
-
-.dc-score__fill--revert-risk {
-  background: var(--dc-color-revert-risk, #f0a);
-}
-
-.dc-score__fill--damaging {
-  background: var(--dc-color-damaging, #d33);
-}
-
-.dc-score__fill--badfaith {
-  background: var(--dc-color-badfaith, #f57c00);
-}
-
-.dc-score__value {
-  width: 50px;
-  text-align: right;
-  font-size: 0.85em;
-}
-
-/* Skeleton loading */
-.dc-revision-card__skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.dc-skeleton-line {
-  height: 16px;
-  background: var(--dc-skeleton-bg, #eaecf0);
-  border-radius: 4px;
-  animation: dc-pulse 1.5s ease-in-out infinite;
-}
-
-.dc-skeleton-line--wide { width: 80%; }
-.dc-skeleton-line--medium { width: 60%; }
-.dc-skeleton-line--narrow { width: 40%; }
-
-@keyframes dc-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+.dc-revision-card__scores-loading {
+  color: var(--color-placeholder);
+  font-style: italic;
 }
 </style>

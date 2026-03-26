@@ -48,6 +48,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@wikimedia/codex':
+        specifier: ^1.14.0
+        version: 1.23.0(vue@3.5.30(typescript@5.9.3))
       vue-i18n:
         specifier: ^9.14.0
         version: 9.14.5(vue@3.5.30(typescript@5.9.3))

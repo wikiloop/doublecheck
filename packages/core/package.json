@@ -15,7 +15,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "vue-i18n": "^9.14.0"
+    "vue-i18n": "^9.14.0",
+    "@wikimedia/codex": "^1.14.0"
   },
   "peerDependencies": {
     "vue": "^3.5.0"

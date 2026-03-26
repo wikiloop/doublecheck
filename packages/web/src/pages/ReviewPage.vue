@@ -11,17 +11,15 @@ import type {
   JudgementsResponse,
   ScoredRevision,
 } from "@doublecheck/core";
-import { useReviewFeed } from "@doublecheck/core";
+import {
+  useReviewFeed,
+  RevisionCard, DiffBox, ActionPanel, JudgementPanel,
+  FeedFilters, GoogleSearchPanel,
+} from "@doublecheck/core";
 import { CdxButton, CdxMessage } from "@wikimedia/codex";
-import RevisionCard from "../components/RevisionCard.vue";
-import DiffBox from "../components/DiffBox.vue";
-import ActionPanel from "../components/ActionPanel.vue";
-import JudgementPanel from "../components/JudgementPanel.vue";
 import DirectRevertPanel from "../components/DirectRevertPanel.vue";
 import ThankAuthorPanel from "../components/ThankAuthorPanel.vue";
-import GoogleSearchPanel from "../components/GoogleSearchPanel.vue";
 import TagArticlePanel from "../components/TagArticlePanel.vue";
-import FeedFilters from "../components/FeedFilters.vue";
 import { useAuth } from "../composables/useAuth";
 
 // Stream/pool constants now in @doublecheck/core useReviewFeed

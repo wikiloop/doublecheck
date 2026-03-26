@@ -1,101 +1,87 @@
 <script setup lang="ts">
-import type { JudgementAction } from "../types/index.js";
-import type { ActionPanelProps } from "../types/index.js";
+// TODO: replace with @doublecheck/core component when available
+import type { ActionPanelProps } from "@doublecheck/core";
+import type { JudgementAction } from "@doublecheck/core";
+import { useI18n } from "vue-i18n";
+import { CdxButton } from "@wikimedia/codex";
 
-const props = withDefaults(defineProps<ActionPanelProps>(), {
-  disabled: false,
-  currentAction: null,
-});
+const { t } = useI18n();
 
-const emit = defineEmits<{
-  (e: "judge", action: JudgementAction): void;
-}>();
+defineProps<ActionPanelProps>();
+const emit = defineEmits<{ judge: [action: JudgementAction] }>();
 
-const actions: { key: JudgementAction; label: string; cssClass: string }[] = [
-  { key: "ShouldRevert", label: "Should Revert", cssClass: "dc-action-btn--revert" },
-  { key: "NotSure", label: "Not Sure", cssClass: "dc-action-btn--notsure" },
-  { key: "LooksGood", label: "Looks Good", cssClass: "dc-action-btn--good" },
+const actions: { key: JudgementAction; label: string; color: string; shortcut: string }[] = [
+  { key: "ShouldRevert", label: "Label-ShouldRevert", color: "var(--color-destructive)", shortcut: "R" },
+  { key: "NotSure", label: "Label-NotSure", color: "var(--color-placeholder)", shortcut: "N" },
+  { key: "LooksGood", label: "Label-LooksGood", color: "var(--color-success)", shortcut: "G" },
 ];
-
-function handleClick(action: JudgementAction) {
-  if (props.disabled || props.currentAction) return;
-  emit("judge", action);
-}
 </script>
 
 <template>
   <div class="dc-action-panel">
-    <button
-      v-for="action in actions"
-      :key="action.key"
-      class="dc-action-btn"
-      :class="[
-        action.cssClass,
-        { 'dc-action-btn--active': props.currentAction === action.key },
-      ]"
-      :disabled="props.disabled || !!props.currentAction"
-      :data-action="action.key"
-      @click="handleClick(action.key)"
-    >
-      {{ action.label }}
-    </button>
+    <h4 class="dc-action-panel__title">
+      {{ t("Label-YourJudgement") }}
+    </h4>
+    <div class="dc-action-panel__buttons">
+      <CdxButton
+        v-for="action in actions"
+        :key="action.key"
+        :weight="currentAction === action.key ? 'primary' : 'normal'"
+        :class="['dc-action-btn', `dc-action-btn--${action.key}`]"
+        :style="currentAction === action.key ? { background: action.color, borderColor: action.color, color: '#fff' } : {}"
+        :disabled="disabled"
+        @click="emit('judge', action.key)"
+      >
+        {{ t(action.label) }}
+        <kbd class="dc-action-panel__kbd">{{ action.shortcut }}</kbd>
+      </CdxButton>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .dc-action-panel {
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 4px;
+  padding: 1rem;
+  background: var(--background-color-base);
+}
+
+.dc-action-panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.dc-action-panel__buttons {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.dc-action-btn {
-  flex: 1;
-  min-width: 100px;
-  padding: 10px 16px;
-  border: 2px solid transparent;
-  border-radius: var(--dc-border-radius, 4px);
-  font-size: 0.95em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+.dc-action-btn--ShouldRevert {
+  border-color: var(--color-destructive) !important;
+  color: var(--color-destructive) !important;
 }
 
-.dc-action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.dc-action-btn--NotSure {
+  border-color: var(--color-warning) !important;
+  color: var(--color-warning) !important;
 }
 
-.dc-action-btn--revert {
-  background: var(--dc-color-revert-bg, #fee7e6);
-  color: var(--dc-color-revert-text, #d33);
+.dc-action-btn--LooksGood {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
 }
 
-.dc-action-btn--revert.dc-action-btn--active {
-  border-color: var(--dc-color-revert-text, #d33);
-  background: var(--dc-color-revert-text, #d33);
-  color: #fff;
-}
-
-.dc-action-btn--notsure {
-  background: var(--dc-color-notsure-bg, #fef6e7);
-  color: var(--dc-color-notsure-text, #ac6600);
-}
-
-.dc-action-btn--notsure.dc-action-btn--active {
-  border-color: var(--dc-color-notsure-text, #ac6600);
-  background: var(--dc-color-notsure-text, #ac6600);
-  color: #fff;
-}
-
-.dc-action-btn--good {
-  background: var(--dc-color-good-bg, #d5fdf4);
-  color: var(--dc-color-good-text, #14866d);
-}
-
-.dc-action-btn--good.dc-action-btn--active {
-  border-color: var(--dc-color-good-text, #14866d);
-  background: var(--dc-color-good-text, #14866d);
-  color: #fff;
+.dc-action-panel__kbd {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0 0.3em;
+  font-size: 0.75em;
+  font-family: inherit;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.6;
+  line-height: 1.4;
 }
 </style>

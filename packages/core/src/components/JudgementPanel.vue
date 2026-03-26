@@ -1,88 +1,72 @@
 <script setup lang="ts">
-import type { JudgementAction } from "../types/index.js";
-import type { JudgementPanelProps } from "../types/index.js";
+// TODO: replace with @doublecheck/core component when available
+import type { JudgementPanelProps } from "@doublecheck/core";
+import { useI18n } from "vue-i18n";
 
-const props = withDefaults(defineProps<JudgementPanelProps>(), {
-  userAction: null,
-});
-
-const actionLabels: Record<JudgementAction, string> = {
-  ShouldRevert: "Should Revert",
-  NotSure: "Not Sure",
-  LooksGood: "Looks Good",
-};
-
-const actionCssClasses: Record<JudgementAction, string> = {
-  ShouldRevert: "dc-tally--revert",
-  NotSure: "dc-tally--notsure",
-  LooksGood: "dc-tally--good",
-};
-
-const actionKeys: JudgementAction[] = ["ShouldRevert", "NotSure", "LooksGood"];
+const { t } = useI18n();
+defineProps<JudgementPanelProps>();
 </script>
 
 <template>
   <div class="dc-judgement-panel">
-    <div
-      v-for="action in actionKeys"
-      :key="action"
-      class="dc-tally"
-      :class="[
-        actionCssClasses[action],
-        { 'dc-tally--user': props.userAction === action },
-      ]"
-      :data-action="action"
-    >
-      <span class="dc-tally__label">{{ actionLabels[action] }}</span>
-      <span class="dc-tally__count">{{ props.tallies[action] ?? 0 }}</span>
+    <h4 class="dc-judgement-panel__title">
+      {{ t("Label-Judgement") }}
+    </h4>
+    <div class="dc-judgement-panel__tallies">
+      <div class="dc-tally dc-tally--revert">
+        <span class="dc-tally__label">{{ t("Label-ShouldRevert") }}</span>
+        <span class="dc-tally__count">{{ tallies.ShouldRevert ?? 0 }}</span>
+      </div>
+      <div class="dc-tally dc-tally--notsure">
+        <span class="dc-tally__label">{{ t("Label-NotSure") }}</span>
+        <span class="dc-tally__count">{{ tallies.NotSure ?? 0 }}</span>
+      </div>
+      <div class="dc-tally dc-tally--good">
+        <span class="dc-tally__label">{{ t("Label-LooksGood") }}</span>
+        <span class="dc-tally__count">{{ tallies.LooksGood ?? 0 }}</span>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .dc-judgement-panel {
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 4px;
+  padding: 1rem;
+  background: var(--background-color-base);
+}
+
+.dc-judgement-panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.dc-judgement-panel__tallies {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .dc-tally {
-  flex: 1;
-  min-width: 90px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 12px;
-  border: 2px solid transparent;
-  border-radius: var(--dc-border-radius, 4px);
-  background: var(--dc-tag-bg, #eaecf0);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  min-width: 80px;
 }
 
-.dc-tally--user {
-  border-color: var(--dc-text-color, #202122);
-  font-weight: 600;
-}
-
-.dc-tally--revert {
-  background: var(--dc-color-revert-bg, #fee7e6);
-}
-
-.dc-tally--notsure {
-  background: var(--dc-color-notsure-bg, #fef6e7);
-}
-
-.dc-tally--good {
-  background: var(--dc-color-good-bg, #d5fdf4);
-}
+.dc-tally--revert { background: #fee7e6; }
+.dc-tally--notsure { background: var(--background-color-neutral); }
+.dc-tally--good { background: #d5fdf4; }
 
 .dc-tally__label {
-  font-size: 0.85em;
-  color: var(--dc-text-subtle, #54595d);
+  font-size: 0.75rem;
+  color: var(--color-subtle);
 }
 
 .dc-tally__count {
-  font-size: 1.3em;
-  font-weight: 700;
-  margin-top: 4px;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 </style>

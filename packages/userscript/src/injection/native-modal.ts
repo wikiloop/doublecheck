@@ -1,6 +1,7 @@
 // Native Vue modal — mounts ReviewModal.vue directly into the Wikipedia page DOM
 
 import { createApp, type App } from "vue";
+import { createDoubleCheckI18n } from "@doublecheck/core";
 
 const OVERLAY_ID = "dc-modal-overlay";
 const LOG_PREFIX = "[DoubleCheck]";
@@ -71,6 +72,10 @@ export async function openReviewModal(wiki: string, revId: number): Promise<void
       revId: revId || undefined,
       onClose: closeReviewModal,
     });
+
+    // Register i18n so shared core components (ActionPanel, JudgementPanel, etc.) work
+    const i18n = createDoubleCheckI18n();
+    app.use(i18n);
 
     app.mount(container);
     console.log(`${LOG_PREFIX} Review modal mounted`);
