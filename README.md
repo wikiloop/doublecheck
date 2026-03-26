@@ -1,30 +1,38 @@
 # WikiLoop DoubleCheck
 
-Community tool for reviewing Wikipedia edits using AI-assisted scoring and human judgement.
+> **v5 is live!** WikiLoop DoubleCheck has been rebuilt from the ground up with a modern TypeScript/Vue 3 stack, native Wikipedia integration via UserScript, and real-time Wikimedia EventStreams feed. Active deployment resumed March 2026.
 
-**[Start Reviewing](https://doublecheck.wikiloop.org/review)** | **[Wikipedia Project Page](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Discord](https://discord.gg/daZXxPB)**
+Community tool for reviewing Wikipedia edits using AI-assisted scoring and human judgement. Available as a **web app**, **Wikipedia userscript**, and **Chrome extension**.
+
+**[Start Reviewing](https://doublecheck.wikiloop.org/review)** | **[Install UserScript](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Chrome Extension](https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn)** | **[Wikipedia Project Page](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Discord](https://discord.gg/daZXxPB)**
+
+<!-- TODO: Add review flow GIF here -->
+<!-- ![Review flow demo](docs/review-demo.gif) -->
+
+## What's New in v5
+
+- **Native Wikipedia UserScript** — runs directly on every Wikipedia page with a "DoubleCheck" tab (like Twinkle). Uses MediaWiki's built-in Vue 3 + Codex from ResourceLoader (zero extra download).
+- **Real-time review feed** — live stream from Wikimedia EventStreams with AI-ranked priority scoring. Reviews edits most likely to be damaging first.
+- **Direct revert/warn/thank** — actions use your own Wikipedia session via the MediaWiki API. Reverts appear under your account.
+- **Article history mode** — on article history pages, review the last 5 revisions of that article before switching to the global feed.
+- **Cross-wiki support** — install once from Meta-Wiki, works on all Wikimedia wikis (English, French, Japanese, etc.).
+- **Shared component architecture** — web app, userscript, and extension all share UI components from `@doublecheck/core`.
 
 ## Install
 
-### UserScript (recommended for Wikipedia editors)
+### UserScript (recommended)
 
-Add this line to your [common.js](https://en.wikipedia.org/wiki/Special:MyPage/common.js):
+Visit **[Wikipedia:WikiLoop DoubleCheck](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** and click **"Install DoubleCheck"**. One click — done.
 
-```js
-mw.loader.load('https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js');
-```
-
-This integrates DoubleCheck directly into Wikipedia. On diff pages, a floating button opens the full review interface in a modal overlay. On RecentChanges and Watchlist, risk badges appear on each edit. Revert, thank, and warn actions use **your own Wikipedia session**.
-
-Alternatively, install via [Tampermonkey](https://www.tampermonkey.net/) or [Greasemonkey](https://www.greasespot.net/): [doublecheck.user.js](https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js)
+The userscript adds a "DoubleCheck" tab to every Wikipedia page. Click it to open the review modal with the full review interface, diff viewer, ML risk scores, and action buttons — without leaving the page.
 
 ### Chrome Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn). Works the same as the userscript.
+Install from the **[Chrome Web Store](https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn)**.
 
 ### Web Application
 
-Visit [doublecheck.wikiloop.org/review](https://doublecheck.wikiloop.org/review) — no installation needed.
+Visit **[doublecheck.wikiloop.org/review](https://doublecheck.wikiloop.org/review)** — no installation needed.
 
 ## Features
 
@@ -38,41 +46,51 @@ Visit [doublecheck.wikiloop.org/review](https://doublecheck.wikiloop.org/review)
 - **Keyboard shortcuts** — R (revert), G (looks good), N (not sure + skip), Arrow keys (prev/next)
 - **Leaderboard** — [doublecheck.wikiloop.org/leaderboard](https://doublecheck.wikiloop.org/leaderboard)
 
-## How it works
+## How It Works
 
-When using the userscript or Chrome extension on Wikipedia:
+1. A "**DoubleCheck**" tab appears on every Wikipedia page
+2. Click it to open the review modal — edits stream in from Wikimedia EventStreams, ranked by AI risk score
+3. Review the diff, see ML scores, and judge: **Should Revert**, **Not Sure**, or **Looks Good**
+4. If vandalism: **directly revert** with one click (uses your Wikipedia account)
+5. After reverting: **warn the editor** with standard warning templates
+6. If good edit: **thank the author** via MW Thanks
 
-1. Visit a diff page (e.g., `Special:Diff/12345`) or Special:RecentChanges
-2. Click the floating "Review with DoubleCheck" button
-3. A modal overlay (80% of page) opens with the full review interface
-4. Review the diff, see ML risk scores, and cast your judgement
-5. If you judge "Should Revert", directly revert using your own Wikipedia account
+## Architecture
 
-## Tech Stack
+```
+@doublecheck/core        Shared Vue 3 components, composables, API client, types
+@doublecheck/web         Web SPA (Vite + Vue 3 + Codex) → Vercel + Toolforge
+@doublecheck/server      Express API + MongoDB → Toolforge
+@doublecheck/userscript  Wikipedia UserScript (Vue via ResourceLoader) → Toolforge
+@doublecheck/extension   Chrome Extension (Manifest V3) → Chrome Web Store
+```
 
 - **Frontend:** TypeScript, Vue 3, Wikimedia Codex UI
-- **Backend:** Node.js, Express, MongoDB
+- **Backend:** Node.js, Hono, MongoDB
 - **ML Scoring:** Wikimedia LiftWing (ORES) + revert-risk prediction via EventStreams
 - **Hosted on:** [Toolforge](https://wikiloop-doublecheck.toolforge.org) and [Vercel](https://doublecheck.wikiloop.org)
-- **Monorepo:** pnpm workspaces — `packages/web`, `packages/server`, `packages/extension`, `packages/userscript`, `packages/core`
 
 ## Development
 
 ```bash
 pnpm install
 pnpm build
-pnpm test
-pnpm dev        # start dev servers
+pnpm test           # 180+ tests across all packages
+pnpm dev            # start dev servers
 ```
 
 ## Deploy
 
 ```bash
 bash scripts/deploy.sh all          # deploy to all targets
-bash scripts/deploy.sh vercel       # deploy web app only
-bash scripts/deploy.sh toolforge    # deploy to Toolforge only
-bash scripts/deploy.sh extension    # build Chrome extension zip
+bash scripts/deploy.sh vercel       # web app → Vercel
+bash scripts/deploy.sh toolforge    # server + userscript → Toolforge
+bash scripts/deploy.sh extension    # Chrome extension → CWS
 ```
+
+## Contributing
+
+See **[Wikipedia:WikiLoop DoubleCheck](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** for the contributor signup. Issues and PRs welcome on [GitHub](https://github.com/wikiloop/doublecheck/issues).
 
 ## License
 

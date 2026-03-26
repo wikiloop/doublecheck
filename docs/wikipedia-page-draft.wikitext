@@ -18,7 +18,7 @@
 }}
 {{Portal|Free and open-source software}}
 <br/><div style="text-align:center;">{{Clickable button 2|Start reviewing|class=mw-ui-progressive|url=https://doublecheck.wikiloop.org/review}}
-{{Clickable button 2|Install as UserScript|url=#Installation}}
+<span id="User:Xinbenlv/WikiLoopDoubleCheck.js" class="scriptInstallerLink makeLinkLookLikeButton">Install DoubleCheck</span>
 {{Clickable button 2|Join chat on Discord|url=https://discord.gg/daZXxPB}}</div><br/>
 
 '''WikiLoop DoubleCheck''' (previously WikiLoop Battlefield) is an open-source, crowd-sourced, counter vandalism tool for Wikipedia. It is available as a '''web application''', a '''Chrome extension''', and a '''userscript''' that runs directly on Wikipedia pages.
@@ -35,12 +35,9 @@ Visit [https://doublecheck.wikiloop.org/review doublecheck.wikiloop.org/review] 
 === UserScript (recommended for Wikipedia editors) ===
 The userscript integrates directly into Wikipedia. On diff pages, it adds a floating button that opens the full DoubleCheck review interface in a modal overlay. On [[Special:RecentChanges]] and [[Special:Watchlist]], it shows risk scores on each edit. When you revert or thank, it uses '''your own Wikipedia session''' — actions appear under your account.
 
-To install, add this line to your [[Special:MyPage/common.js|common.js]]:
-<syntaxhighlight lang="javascript">
-mw.loader.load('https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js');
-</syntaxhighlight>
+Click the "'''Install DoubleCheck'''" button at the top of this page. If you don't see the button, [https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck?withJS=MediaWiki:Gadget-script-installer.js click here to activate the installer] and try again.
 
-Or, if you use [[Wikipedia:Tampermonkey|Tampermonkey]] or [[Wikipedia:Greasemonkey|Greasemonkey]], install directly from: [https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js doublecheck.user.js]
+The installer uses [https://meta.wikimedia.org/wiki/User:Xinbenlv/WikiLoopDoubleCheck.js a cross-wiki loader on Meta-Wiki], so it works on '''all''' Wikimedia wikis (English, French, Japanese, etc.).
 
 === Chrome extension ===
 Install from the [https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn Chrome Web Store]. The extension works the same as the userscript — it adds a review button on diff pages and risk badges on RecentChanges/Watchlist.
