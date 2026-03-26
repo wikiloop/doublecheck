@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { performRevert, performWarn } from "../composables/useWikiAction.js";
-import { fetchRevertCheck } from "../api.js";
+import { performRevert, performWarn, checkRevertEligibility } from "../composables/useWikiAction.js";
 
 const props = defineProps<{
   wiki: string;
@@ -29,7 +28,8 @@ async function checkEligibility() {
   checking.value = true;
   eligible.value = null;
   try {
-    const data = await fetchRevertCheck(props.wiki, props.revId);
+    // Client-side check using user's Wikipedia session (no OAuth needed)
+    const data = await checkRevertEligibility(props.wiki, props.revId, props.revisionUser, props.title);
     eligible.value = data.eligible ?? false;
     eligibilityReason.value = data.reason ?? "";
     baseRevId.value = data.baseRevId;

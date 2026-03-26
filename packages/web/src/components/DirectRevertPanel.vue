@@ -36,15 +36,29 @@ async function checkEligibility() {
   eligibility.value = null;
   revertResult.value = null;
   try {
-    const res = await fetch(
-      `/api/revert/check/${encodeURIComponent(props.wiki)}/${props.revId}`,
-      { credentials: "include" },
-    );
-    if (res.ok) {
-      eligibility.value = await res.json();
+    if (isEmbed.value) {
+      // Embed mode (extension iframe): check via parent window's Wikipedia session
+      eligibility.value = await requestWikiAction<RevertCheckResponse>("check-eligibility", {
+        wiki: props.wiki,
+        revId: props.revId,
+        revisionUser: props.revisionUser,
+        title: props.title,
+      });
+    } else {
+      // Standalone web app: check via server (OAuth)
+      const res = await fetch(
+        `/api/revert/check/${encodeURIComponent(props.wiki)}/${props.revId}`,
+        { credentials: "include" },
+      );
+      if (res.ok) {
+        eligibility.value = await res.json();
+      }
     }
   } catch {
-    // API unavailable
+    // API unavailable — allow attempt
+    if (isEmbed.value) {
+      eligibility.value = { eligible: true };
+    }
   } finally {
     checking.value = false;
   }

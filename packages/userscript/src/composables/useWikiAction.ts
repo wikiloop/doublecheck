@@ -154,6 +154,79 @@ export async function performWarn(
   }
 }
 
+/**
+ * Client-side eligibility check using same-origin MediaWiki API.
+ * Mirrors the server-side checkEligibility() but uses the user's Wikipedia
+ * session directly — no OAuth needed (same pattern as Twinkle/Ultraviolet).
+ */
+export async function checkRevertEligibility(
+  wiki: string,
+  revId: number,
+  revisionUser: string,
+  title: string,
+): Promise<{ eligible: boolean; reason?: string; baseRevId?: number }> {
+  const currentWiki = getCurrentWiki();
+  if (currentWiki && currentWiki !== wiki) {
+    return { eligible: false, reason: `Cannot revert ${wiki} edits from ${currentWiki}` };
+  }
+
+  // Check if user is logged in
+  const user = getWikiUser();
+  if (!user?.username) {
+    return { eligible: false, reason: "Not logged in to Wikipedia" };
+  }
+
+  try {
+    // Fetch latest 50 revisions for this page to check if revId is still current
+    const url =
+      `/w/api.php?action=query&titles=${encodeURIComponent(title)}` +
+      `&prop=revisions&rvprop=ids|user&rvlimit=50&format=json&formatversion=2`;
+    const res = await fetch(url, { credentials: "include" });
+    const data = await res.json();
+    const page = data?.query?.pages?.[0];
+    const revisions: { revid: number; user: string }[] = page?.revisions ?? [];
+
+    if (revisions.length === 0) {
+      return { eligible: false, reason: "Could not fetch page revisions" };
+    }
+
+    // The target revision must be the latest
+    if (revisions[0].revid !== revId) {
+      return { eligible: false, reason: "This revision is no longer the latest — someone else has edited the page" };
+    }
+
+    // Walk newest-to-oldest to find consecutive edits by the same user
+    let consecutiveCount = 0;
+    for (const rev of revisions) {
+      if (rev.user === revisionUser) consecutiveCount++;
+      else break;
+    }
+
+    // If ALL 50 revisions are by the same user, we can't determine the base
+    if (consecutiveCount === revisions.length && revisions.length >= 50) {
+      return {
+        eligible: false,
+        reason: `${revisionUser} has 50+ consecutive edits — please review the page history manually`,
+      };
+    }
+
+    // Multi-edit rollback: return the baseRevId (last revision by a different user)
+    if (consecutiveCount >= 2) {
+      const baseRev = revisions[consecutiveCount];
+      return {
+        eligible: true,
+        baseRevId: baseRev?.revid,
+      };
+    }
+
+    // Single edit — simple case
+    return { eligible: true };
+  } catch {
+    // If the check fails, allow the attempt (revert itself will give a clear error)
+    return { eligible: true };
+  }
+}
+
 /** Fetch diff HTML from same-origin MediaWiki API */
 export async function fetchDiffHtml(
   revId: number,

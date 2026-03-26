@@ -102,6 +102,7 @@ const infoRes = await fetch(`${CWS_PUBLISH_API}/${EXTENSION_ID}?projection=DRAFT
 if (infoRes.ok) {
   const info = await infoRes.json();
   const publishedVersion = info.crxVersion;
+  const draftStatus = info.status;
   console.log(`🌐 Published version on CWS: ${publishedVersion || '(none)'}`);
 
   if (publishedVersion && publishedVersion === localVersion) {
@@ -110,6 +111,12 @@ if (infoRes.ok) {
   }
   if (publishedVersion) {
     console.log(`📈 Upgrading: ${publishedVersion} → ${localVersion}`);
+  }
+
+  // If a prior submission is pending review, uploading a new zip will supersede it.
+  // The CWS API automatically cancels the pending review when a new upload is received.
+  if (draftStatus === 'PENDING_REVIEW' || draftStatus === 'IN_REVIEW') {
+    console.log(`⏳ Prior submission is ${draftStatus} — the new upload will supersede it.`);
   }
 }
 

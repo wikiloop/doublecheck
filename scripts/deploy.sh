@@ -272,6 +272,42 @@ deploy_toolforge() {
 # ─── Deploy: Extension ───────────────────────────────────────────────────────
 deploy_extension() {
   build_extension
+
+  local ext_ver
+  ext_ver=$(node -p "require('./packages/extension/package.json').version")
+  local zip_file
+  zip_file=$(ls -t "$ROOT"/dist/doublecheck-extension-*.zip 2>/dev/null | head -1)
+  if [ -z "$zip_file" ]; then
+    err "No extension zip found in dist/"
+    return 1
+  fi
+
+  # 1. GitHub Release — users can sideload immediately without waiting for CWS review
+  step "GitHub Release"
+  if $DRY_RUN; then
+    info "[dry-run] Would create GitHub release v${ext_ver}"
+  else
+    local tag="v${ext_ver}"
+    info "Creating GitHub release ${tag} with extension zip..."
+
+    # Create / move tag to current HEAD
+    git tag -f "$tag" HEAD 2>/dev/null || true
+    git push "${GIT_REMOTE_URL}" "$tag" --force 2>/dev/null || true
+
+    # Delete existing release for this tag (if any) then create fresh
+    gh release delete "$tag" --yes 2>/dev/null || true
+    gh release create "$tag" "$zip_file" \
+      --title "DoubleCheck Extension ${tag}" \
+      --notes "Chrome Extension v${ext_ver} (${GIT_HASH})
+
+Install manually: download the .zip, unzip, then load as unpacked extension in chrome://extensions (enable Developer Mode).
+
+Or wait for the Chrome Web Store review to complete." \
+      --latest && ok "GitHub release: https://github.com/wikiloop/doublecheck/releases/tag/${tag}" \
+      || warn "GitHub release creation failed (gh CLI may not be configured)"
+  fi
+
+  # 2. Chrome Web Store — upload + publish (auto-cancels pending review)
   step "Chrome Web Store"
   if $DRY_RUN; then
     info "[dry-run] Would upload and publish to CWS"
@@ -283,17 +319,7 @@ deploy_extension() {
     warn "The publish will fail if this version is already on the store."
   fi
 
-  local ext_ver
-  ext_ver=$(node -p "require('./packages/extension/package.json').version")
   info "Publishing extension v${ext_ver} to CWS..."
-
-  local zip_file
-  zip_file=$(ls -t "$ROOT"/dist/doublecheck-extension-*.zip 2>/dev/null | head -1)
-  if [ -z "$zip_file" ]; then
-    err "No extension zip found in dist/"
-    return 1
-  fi
-
   node "$ROOT/scripts/cws-publish.mjs" --zip "$zip_file"
   ok "Chrome Web Store v${ext_ver} published"
 }
@@ -344,7 +370,7 @@ main() {
     case "$target" in
       vercel)     ok "  Vercel:     https://doublecheck.wikiloop.org" ;;
       toolforge)  ok "  Toolforge:  https://wikiloop-doublecheck.toolforge.org" ;;
-      extension)  ok "  Extension:  dist/doublecheck-extension-*.zip (upload to CWS)" ;;
+      extension)  ok "  Extension:  GitHub release + CWS (dist/doublecheck-extension-*.zip)" ;;
       userscript) ok "  Userscript: served from Toolforge" ;;
     esac
   done

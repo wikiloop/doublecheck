@@ -3,7 +3,7 @@
 import { detectPageType, extractRevisionId, extractWikiId } from "./detection.js";
 import { injectReviewPanel, cleanupReviewPanel } from "./inject-panel.js";
 import { injectRiskBadges, cleanupRiskBadges } from "./inject-badges.js";
-import { closeReviewModal } from "./inject-modal.js";
+import { closeReviewModal, openReviewModal, isModalOpen } from "./inject-modal.js";
 
 function main(): void {
   const pageType = detectPageType();
@@ -44,7 +44,7 @@ function cleanup(): void {
   closeReviewModal();
 }
 
-// Listen for SSE events from the background worker
+// Listen for messages from the background worker
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "SSE_EVENT" && message.eventType === "judgement") {
     // A new judgement was recorded — refresh if relevant
@@ -58,6 +58,18 @@ chrome.runtime.onMessage.addListener((message) => {
     if (data.revisionWiki === currentWiki && data.revisionId === currentRevId) {
       // Re-inject to refresh data
       injectReviewPanel(currentWiki, currentRevId);
+    }
+  }
+
+  if (message.type === "OPEN_MODAL") {
+    // Extension icon clicked — open or toggle the review modal
+    if (isModalOpen()) {
+      closeReviewModal();
+    } else {
+      const wiki = extractWikiId();
+      const revId = extractRevisionId();
+      // revId may be null (e.g. article page) — modal opens the review feed
+      openReviewModal(wiki, revId);
     }
   }
 });

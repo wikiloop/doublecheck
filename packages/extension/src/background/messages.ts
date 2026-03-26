@@ -7,6 +7,7 @@ export const MessageType = {
   AUTH_LOGIN: "AUTH_LOGIN",
   AUTH_STATUS: "AUTH_STATUS",
   AUTH_LOGOUT: "AUTH_LOGOUT",
+  OPEN_MODAL: "OPEN_MODAL",
 } as const;
 
 export type MessageType = (typeof MessageType)[keyof typeof MessageType];
@@ -51,6 +52,11 @@ export interface AuthLogoutMessage {
   type: typeof MessageType.AUTH_LOGOUT;
 }
 
+/** Tell content script to open the review modal. */
+export interface OpenModalMessage {
+  type: typeof MessageType.OPEN_MODAL;
+}
+
 /** Auth status response payload. */
 export interface AuthStatusResponse {
   loggedIn: boolean;
@@ -64,4 +70,5 @@ export type ExtensionMessage =
   | SseEventMessage
   | AuthLoginMessage
   | AuthStatusMessage
-  | AuthLogoutMessage;
+  | AuthLogoutMessage
+  | OpenModalMessage;

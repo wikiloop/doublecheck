@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
+import { execSync } from "child_process";
+
+let gitHash = "unknown";
+try { gitHash = execSync("git rev-parse --short=6 HEAD", { encoding: "utf8" }).trim(); } catch { /* */ }
 
 export default defineConfig({
   plugins: [vue()],
@@ -8,6 +12,9 @@ export default defineConfig({
     alias: {
       "@": resolve(__dirname, "src"),
     },
+  },
+  define: {
+    __GIT_HASH__: JSON.stringify(gitHash),
   },
   build: {
     outDir: "dist",

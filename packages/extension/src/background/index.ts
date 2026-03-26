@@ -10,6 +10,48 @@ import {
 } from "./messages.js";
 import { launchOAuthFlow, getAuthStatus, getAccessToken, logout } from "./auth.js";
 
+// ---------------------------------------------------------------------------
+// Dynamic popup: on Wikipedia → no popup (icon click opens modal directly);
+// elsewhere → show popup.html
+// ---------------------------------------------------------------------------
+
+function isWikipediaUrl(url?: string): boolean {
+  return !!url && /^https:\/\/\w+\.wikipedia\.org\//.test(url);
+}
+
+function updatePopupForTab(tabId: number, url?: string): void {
+  if (isWikipediaUrl(url)) {
+    chrome.action.setPopup({ tabId, popup: "" });
+  } else {
+    chrome.action.setPopup({ tabId, popup: "popup.html" });
+  }
+}
+
+// When a tab is activated, update the popup setting
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    updatePopupForTab(activeInfo.tabId, tab.url);
+  } catch { /* tab may have closed */ }
+});
+
+// When a tab navigates, update the popup setting
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url || changeInfo.status === "complete") {
+    updatePopupForTab(tabId, tab.url);
+  }
+});
+
+// When the icon is clicked (no popup set → on Wikipedia), tell content script to open modal
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) {
+    chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL }).catch(() => {
+      // Content script not loaded — fall back to opening dashboard
+      chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org" });
+    });
+  }
+});
+
 const API_BASE = "https://wikiloop-doublecheck.toolforge.org";
 
 // ---------------------------------------------------------------------------

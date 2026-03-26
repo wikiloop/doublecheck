@@ -9,6 +9,9 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
     },
   },
+  define: {
+    __GIT_HASH__: JSON.stringify("test00"),
+  },
   test: {
     environment: "happy-dom",
     setupFiles: ["./src/__tests__/setup.ts"],

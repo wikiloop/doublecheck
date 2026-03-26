@@ -9,7 +9,7 @@ let escHandler: ((e: KeyboardEvent) => void) | null = null;
 /**
  * Open the DoubleCheck review modal with the full web interface.
  */
-export function openReviewModal(wiki: string, revId: number): void {
+export function openReviewModal(wiki: string, revId: number | null): void {
   closeReviewModal();
 
   // Overlay backdrop
@@ -152,6 +152,14 @@ function setupPostMessageBridge(iframe: HTMLIFrameElement, wiki: string): void {
             payload.username,
             payload.level,
             payload.articleTitle,
+          );
+          break;
+        case "check-eligibility":
+          result = await checkRevertEligibility(
+            payload.wiki || wiki,
+            payload.revId,
+            payload.revisionUser,
+            payload.title,
           );
           break;
         case "get-user":
@@ -338,4 +346,73 @@ async function performWarn(
 function getCurrentWiki(): string | null {
   const match = window.location.hostname.match(/^(\w+)\.wikipedia\.org$/);
   return match ? `${match[1]}wiki` : null;
+}
+
+/**
+ * Client-side eligibility check using same-origin MediaWiki API.
+ * Uses user's Wikipedia session cookies — no OAuth needed.
+ */
+async function checkRevertEligibility(
+  wiki: string,
+  revId: number,
+  revisionUser: string,
+  title: string,
+): Promise<{ eligible: boolean; reason?: string; baseRevId?: number; consecutiveRevIds?: number[]; consecutiveEditUser?: string }> {
+  const currentWiki = getCurrentWiki();
+  if (currentWiki && currentWiki !== wiki) {
+    return { eligible: false, reason: `Cannot revert ${wiki} edits from ${currentWiki}` };
+  }
+
+  const user = getWikiUser();
+  if (!user?.username) {
+    return { eligible: false, reason: "not_logged_in" };
+  }
+
+  try {
+    const url =
+      `/w/api.php?action=query&titles=${encodeURIComponent(title)}` +
+      `&prop=revisions&rvprop=ids|user&rvlimit=50&format=json&formatversion=2`;
+    const res = await fetch(url, { credentials: "include" });
+    const data = await res.json();
+    const page = data?.query?.pages?.[0];
+    const revisions: { revid: number; user: string }[] = page?.revisions ?? [];
+
+    if (revisions.length === 0) {
+      return { eligible: false, reason: "not_current" };
+    }
+
+    if (revisions[0].revid !== revId) {
+      return { eligible: false, reason: "not_current" };
+    }
+
+    let consecutiveCount = 0;
+    for (const rev of revisions) {
+      if (rev.user === revisionUser) consecutiveCount++;
+      else break;
+    }
+
+    if (consecutiveCount === revisions.length && revisions.length >= 50) {
+      return {
+        eligible: false,
+        reason: "consecutive_edits",
+        consecutiveEditUser: revisionUser,
+      };
+    }
+
+    const consecutiveRevIds = revisions.slice(0, consecutiveCount).map((r) => r.revid);
+    const baseRev = revisions[consecutiveCount];
+
+    if (consecutiveCount >= 2 && baseRev) {
+      return {
+        eligible: true,
+        consecutiveEditUser: revisionUser,
+        consecutiveRevIds,
+        baseRevId: baseRev.revid,
+      };
+    }
+
+    return { eligible: true };
+  } catch {
+    return { eligible: true };
+  }
 }

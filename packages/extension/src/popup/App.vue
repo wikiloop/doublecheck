@@ -4,6 +4,11 @@ import { ref, onMounted } from "vue";
 import { MessageType, type AuthStatusResponse } from "../background/messages.js";
 import type { LeaderboardEntry } from "@doublecheck/core";
 
+declare const __GIT_HASH__: string;
+
+const appVersion = chrome.runtime.getManifest().version;
+const gitHash = __GIT_HASH__;
+
 const loading = ref(true);
 const loggedIn = ref(false);
 const username = ref("");
@@ -208,6 +213,10 @@ function formatTime(timestamp: string): string {
         </a>
       </section>
     </template>
+
+    <footer class="dc-popup-footer">
+      v{{ appVersion }}{{ gitHash ? '+' + gitHash : '' }}
+    </footer>
   </div>
 </template>
 
@@ -380,5 +389,12 @@ function formatTime(timestamp: string): string {
 
 .dc-popup-links a:hover {
   text-decoration: underline;
+}
+
+.dc-popup-footer {
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 11px;
+  color: #a2a9b1;
 }
 </style>

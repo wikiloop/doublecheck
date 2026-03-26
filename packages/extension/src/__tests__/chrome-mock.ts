@@ -103,6 +103,7 @@ export const chromeMock = {
       hasListeners: vi.fn(() => false),
     },
     getURL: vi.fn((path: string) => `chrome-extension://test-id/${path}`),
+    getManifest: vi.fn(() => ({ version: "5.7.0" })),
   },
   storage: {
     session: createStorageArea("session"),
@@ -122,6 +123,28 @@ export const chromeMock = {
       return Promise.resolve(tabs);
     }),
     sendMessage: vi.fn(async () => undefined),
+    get: vi.fn(async () => ({ id: 1, url: "https://en.wikipedia.org/wiki/Test" })),
+    onActivated: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      hasListener: vi.fn(() => false),
+      hasListeners: vi.fn(() => false),
+    },
+    onUpdated: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      hasListener: vi.fn(() => false),
+      hasListeners: vi.fn(() => false),
+    },
+  },
+  action: {
+    setPopup: vi.fn(),
+    onClicked: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      hasListener: vi.fn(() => false),
+      hasListeners: vi.fn(() => false),
+    },
   },
   identity: {
     getRedirectURL: vi.fn((path?: string) => `https://test-id.chromiumapp.org/${path ?? ""}`),

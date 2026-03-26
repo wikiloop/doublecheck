@@ -44,6 +44,7 @@ describe("Background message routing", () => {
     expect(MessageType.AUTH_LOGIN).toBe("AUTH_LOGIN");
     expect(MessageType.AUTH_STATUS).toBe("AUTH_STATUS");
     expect(MessageType.AUTH_LOGOUT).toBe("AUTH_LOGOUT");
+    expect(MessageType.OPEN_MODAL).toBe("OPEN_MODAL");
   });
 
   it("registers a message listener when background script loads", () => {
