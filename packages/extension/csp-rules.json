@@ -16,7 +16,7 @@
       ]
     },
     "condition": {
-      "urlFilter": "||*.wikipedia.org",
+      "requestDomains": ["wikipedia.org"],
       "resourceTypes": ["main_frame", "sub_frame"]
     }
   }
