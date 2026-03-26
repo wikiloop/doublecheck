@@ -1,10 +1,33 @@
 # WikiLoop DoubleCheck
 
+<p align="center">
+  <a href="https://doublecheck.wikiloop.org">
+    <img src="docs/wikiloop-doublecheck-logo.svg" alt="WikiLoop DoubleCheck" height="100">
+  </a>
+</p>
+
+<p align="center">
+  <strong>Community tool for reviewing Wikipedia edits using AI-assisted scoring and human judgement.</strong>
+</p>
+
+<p align="center">
+  <a href="https://doublecheck.wikiloop.org/review">Start Reviewing</a> &middot;
+  <a href="https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck">Install UserScript</a> &middot;
+  <a href="https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn">Chrome Extension</a> &middot;
+  <a href="https://discord.gg/daZXxPB">Discord</a>
+</p>
+
+---
+
 > **v5 is live!** WikiLoop DoubleCheck has been rebuilt from the ground up with a modern TypeScript/Vue 3 stack, native Wikipedia integration via UserScript, and real-time Wikimedia EventStreams feed. Active deployment resumed March 2026.
 
-Community tool for reviewing Wikipedia edits using AI-assisted scoring and human judgement. Available as a **web app**, **Wikipedia userscript**, and **Chrome extension**.
+## History
 
-WikiLoop DoubleCheck was originally developed at Google (as `google/wikiloop-doublecheck`). Since the author left Google, the project has moved to **[github.com/wikiloop](https://github.com/wikiloop)** and is now maintained entirely through community contributions. **Help wanted and welcome** — whether you're a developer, Wikipedia editor, or researcher, we'd love your involvement.
+WikiLoop DoubleCheck (originally **WikiLoop Battlefield**) was created in 2019 at Google as [`google/wikiloop-doublecheck`](https://github.com/google/wikiloop-doublecheck), an open-source, crowd-sourced counter-vandalism tool for Wikipedia. It was presented at Wikimania 2019 and gained support from dozens of Wikipedia editors and researchers.
+
+Since the author left Google, the project has moved to **[github.com/wikiloop](https://github.com/wikiloop)** and is now maintained **100% through community contributions**. The v5 rewrite modernizes the entire stack while preserving the original mission: making it easy for anyone to help protect Wikipedia.
+
+**Help wanted and welcome** — whether you're a developer, Wikipedia editor, or researcher, we'd love your involvement. See [Contributing](#contributing) below.
 
 **[Start Reviewing](https://doublecheck.wikiloop.org/review)** | **[Install UserScript](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Chrome Extension](https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn)** | **[Wikipedia Project Page](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Discord](https://discord.gg/daZXxPB)**
 
@@ -89,9 +112,52 @@ bash scripts/deploy.sh toolforge    # server + userscript → Toolforge
 bash scripts/deploy.sh extension    # Chrome extension → CWS
 ```
 
+## Contributors
+
+Thanks to all the wonderful people who have contributed to WikiLoop DoubleCheck since its inception at Google in 2019:
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="http://keybase.io/xinbenlv"><img src="https://avatars2.githubusercontent.com/u/640325?v=4" width="80px;" alt=""/><br /><sub><b>xinbenlv</b></sub></a><br />💻📖🤔📆</td>
+    <td align="center"><a href="https://epicfaace.github.io/"><img src="https://avatars2.githubusercontent.com/u/1689183?v=4" width="80px;" alt=""/><br /><sub><b>Ashwin Ramaswami</b></sub></a><br />🚇💻</td>
+    <td align="center"><a href="https://github.com/hrasyid"><img src="https://avatars0.githubusercontent.com/u/4159519?v=4" width="80px;" alt=""/><br /><sub><b>Hamdanil Rasyid</b></sub></a><br />🌍💻🐛</td>
+    <td align="center"><a href="https://aligoren.com"><img src="https://avatars0.githubusercontent.com/u/4205423?v=4" width="80px;" alt=""/><br /><sub><b>Ali GOREN</b></sub></a><br />🌍🐛💻</td>
+    <td align="center"><a href="https://github.com/ElanHR"><img src="https://avatars3.githubusercontent.com/u/573697?v=4" width="80px;" alt=""/><br /><sub><b>Elan</b></sub></a><br />🐛</td>
+    <td align="center"><a href="https://github.com/ChaoyueFred"><img src="https://avatars1.githubusercontent.com/u/14314482?v=4" width="80px;" alt=""/><br /><sub><b>ChaoyueFred</b></sub></a><br />📹</td>
+  </tr>
+  <tr>
+    <td align="center"><a href="http://simia.net"><img src="https://avatars0.githubusercontent.com/u/663648?v=4" width="80px;" alt=""/><br /><sub><b>Denny Vrandecic</b></sub></a><br />🐛</td>
+    <td align="center"><a href="https://wisn.github.io/"><img src="https://avatars1.githubusercontent.com/u/8147926?v=4" width="80px;" alt=""/><br /><sub><b>Wisnu Adi Nurcahyo</b></sub></a><br />🐛</td>
+    <td align="center"><a href="https://curimit.com/blog"><img src="https://avatars0.githubusercontent.com/u/1249753?v=4" width="80px;" alt=""/><br /><sub><b>curimit</b></sub></a><br />🐛</td>
+    <td align="center"><a href="http://www.andrew-g-west.com"><img src="https://avatars0.githubusercontent.com/u/1369929?v=4" width="80px;" alt=""/><br /><sub><b>Andrew G. West</b></sub></a><br />💬🔧</td>
+    <td align="center"><a href="https://florian-koerner.com"><img src="https://avatars0.githubusercontent.com/u/647303?v=4" width="80px;" alt=""/><br /><sub><b>Florian Korner</b></sub></a><br />💻</td>
+    <td align="center"><a href="https://github.com/dz-s"><img src="https://avatars2.githubusercontent.com/u/27350480?v=4" width="80px;" alt=""/><br /><sub><b>dz_s</b></sub></a><br />💻</td>
+  </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/ExtremoBlando"><img src="https://avatars3.githubusercontent.com/u/18313773?v=4" width="80px;" alt=""/><br /><sub><b>ExtremoBlando</b></sub></a><br />🐛</td>
+    <td align="center"><a href="http://aiz.miga.lv"><img src="https://avatars1.githubusercontent.com/u/1764614?v=4" width="80px;" alt=""/><br /><sub><b>Martins Brunenieks</b></sub></a><br />🌍</td>
+    <td align="center"><a href="https://bhavyakaria.github.io/"><img src="https://avatars3.githubusercontent.com/u/16178833?v=4" width="80px;" alt=""/><br /><sub><b>Bhavya Karia</b></sub></a><br />🌍</td>
+    <td align="center"><a href="https://github.com/fmobus"><img src="https://avatars0.githubusercontent.com/u/396521?v=4" width="80px;" alt=""/><br /><sub><b>Felipe Mobus</b></sub></a><br />🌍</td>
+  </tr>
+</table>
+<!-- markdownlint-enable -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+**Translation volunteers:** @tzuhsiao (ZH), @MT-Wizard & @adehtiarov (UK), @alex-martelli (IT), @apatronl & @fmobus (ES), @fmobus & @he7d3r & Ted Hardie (PT), @luisfors-g & @renamoo (JA), Andrei Goriachev (RU)
+
 ## Contributing
 
-See **[Wikipedia:WikiLoop DoubleCheck](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** for the contributor signup. Issues and PRs welcome on [GitHub](https://github.com/wikiloop/doublecheck/issues).
+We welcome contributions of all kinds! See the **[Wikipedia:WikiLoop DoubleCheck](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** project page for editor signup, or jump straight into the code:
+
+- [Open issues](https://github.com/wikiloop/doublecheck/issues) — bug reports and feature requests
+- [Good first issues](https://github.com/wikiloop/doublecheck/labels/good%20first%20issue) — great for new contributors
+- Translations — help us reach more languages
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification.
 
 ## License
 
