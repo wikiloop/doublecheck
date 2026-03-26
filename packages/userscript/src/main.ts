@@ -77,33 +77,49 @@ function detectPageType(): "diff" | "recentchanges" | "watchlist" | "other" {
 
 /**
  * Add a "DoubleCheck" tab to the Wikipedia page tabs (same level as Read, Edit, History, TW).
- * Uses mw.util.addPortletLink with p-views for top-level visibility.
+ * Tries multiple portlet locations for compatibility across skins.
  */
 function addToolbarLink(): void {
   try {
     mw.loader.using(["mediawiki.util"], () => {
+      console.log(`${LOG_PREFIX} Adding toolbar link...`);
       const pageType = detectPageType();
       const wiki = getWikiId();
       const revId = pageType === "diff" ? getRevisionId() : null;
+      const tooltip = revId
+        ? "Review this edit with WikiLoop DoubleCheck"
+        : "Open WikiLoop DoubleCheck review feed";
 
-      // p-views = top-level page tabs (Read, Edit, View history) — always visible
-      const li = mw.util.addPortletLink(
-        "p-views",
-        "#",
-        "DoubleCheck",
-        "ca-doublecheck",
-        revId
-          ? "Review this edit with WikiLoop DoubleCheck"
-          : "Open WikiLoop DoubleCheck review feed",
-      );
-      if (!li) return;
+      // Try portlet locations in order of preference:
+      // p-views = page tabs (Read, Edit, History) — Vector legacy
+      // p-cactions = more actions — Vector 2022 shows as "..." menu
+      // p-tb = toolbox sidebar — universal fallback
+      const portlets = ["p-views", "p-cactions", "p-tb", "p-navigation"];
+      let li: HTMLElement | null = null;
+      let usedPortlet = "";
 
-      // Attach click handler to the <a> inside the <li> to properly prevent navigation
+      for (const portlet of portlets) {
+        li = mw.util.addPortletLink(portlet, "#", "DoubleCheck", "ca-doublecheck", tooltip);
+        if (li) {
+          usedPortlet = portlet;
+          console.log(`${LOG_PREFIX} Toolbar link added to portlet: ${portlet}`);
+          break;
+        }
+        console.log(`${LOG_PREFIX} Portlet ${portlet} not found, trying next...`);
+      }
+
+      if (!li) {
+        console.warn(`${LOG_PREFIX} Could not add toolbar link to any portlet`);
+        return;
+      }
+
+      // Attach click handler to the <a> inside the <li>
       const anchor = li.querySelector("a");
       if (anchor) {
         anchor.addEventListener("click", async (e) => {
           e.preventDefault();
           e.stopPropagation();
+          console.log(`${LOG_PREFIX} DoubleCheck clicked (portlet: ${usedPortlet})`);
           const { openReviewModal, isModalOpen, closeReviewModal } = await import("./injection/modal.js");
           if (isModalOpen()) {
             closeReviewModal();
@@ -111,6 +127,8 @@ function addToolbarLink(): void {
             openReviewModal(wiki, revId ?? 0);
           }
         });
+      } else {
+        console.warn(`${LOG_PREFIX} No <a> element found inside portlet link`);
       }
     });
   } catch (err) {
@@ -156,6 +174,8 @@ async function bootstrap(): Promise<void> {
   initI18n();
 
   const pageType = detectPageType();
+  const skin = (typeof mw !== "undefined" && mw.config?.get("skin")) || "unknown";
+  console.log(`${LOG_PREFIX} Bootstrap — pageType: ${pageType}, skin: ${skin}, url: ${window.location.href.slice(0, 80)}`);
 
   // Always add toolbar link on every Wikipedia page
   addToolbarLink();
