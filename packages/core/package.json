@@ -1,6 +1,6 @@
 {
   "name": "@doublecheck/core",
-  "version": "5.7.3",
+  "version": "5.7.4",
   "private": true,
   "type": "module",
   "exports": {

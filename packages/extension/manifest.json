@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WikiLoop DoubleCheck",
-  "version": "5.7.3",
+  "version": "5.7.4",
   "description": "Crowdsourced vandalism review for Wikipedia",
   "permissions": [
     "activeTab",
@@ -23,7 +23,7 @@
     ]
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_title": "DoubleCheck — Start Reviewing",
     "default_icon": {
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png",

@@ -134,9 +134,16 @@ onMounted(async () => {
 
 async function startReviewing(): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) {
-    await chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL });
+  if (tab?.id && onWikipedia.value) {
+    // On Wikipedia: open modal via content script
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL });
+      window.close();
+      return;
+    } catch { /* content script not loaded — fall through */ }
   }
+  // Not on Wikipedia or content script unavailable: open dashboard
+  await chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org/review" });
   window.close();
 }
 </script>
@@ -184,11 +191,8 @@ async function startReviewing(): Promise<void> {
         </template>
       </section>
 
-      <!-- Start Reviewing (on Wikipedia pages) -->
-      <section
-        v-if="onWikipedia"
-        class="dc-popup-section dc-popup-review"
-      >
+      <!-- Start Reviewing -->
+      <section class="dc-popup-section dc-popup-review">
         <button
           class="dc-popup-btn dc-popup-btn--review"
           @click="startReviewing"

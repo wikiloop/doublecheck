@@ -11,9 +11,22 @@ import {
 import { launchOAuthFlow, getAuthStatus, getAccessToken, logout } from "./auth.js";
 
 // ---------------------------------------------------------------------------
-// Popup always shown; "Start Reviewing" button inside popup sends OPEN_MODAL
-// to the content script. No dynamic popup toggling needed.
+// No popup — clicking the icon opens the review modal directly via content
+// script on Wikipedia. On other sites, opens the web dashboard.
 // ---------------------------------------------------------------------------
+
+// Show version in the icon tooltip
+const ver = chrome.runtime.getManifest().version;
+chrome.action.setTitle({ title: `DoubleCheck v${ver} — Click to review` });
+
+chrome.action.onClicked.addListener((tab) => {
+  if (tab.id) {
+    chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL }).catch(() => {
+      // Content script not available (not on Wikipedia) — open dashboard
+      chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org/review" });
+    });
+  }
+});
 
 const API_BASE = "https://wikiloop-doublecheck.toolforge.org";
 

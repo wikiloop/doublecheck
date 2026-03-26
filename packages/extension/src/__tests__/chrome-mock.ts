@@ -139,6 +139,7 @@ export const chromeMock = {
   },
   action: {
     setPopup: vi.fn(),
+    setTitle: vi.fn(),
     onClicked: {
       addListener: vi.fn(),
       removeListener: vi.fn(),
