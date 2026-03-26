@@ -165,7 +165,16 @@ build_extension() {
 
   pnpm --filter @doublecheck/extension build
 
+  # Copy static files that Vite doesn't handle
+  cp packages/extension/manifest.json packages/extension/dist/
+  cp -r packages/extension/icons packages/extension/dist/
+  # Generate content.css if not produced by Vite
+  if [ ! -f packages/extension/dist/content.css ]; then
+    cp packages/extension/src/content/styles.css packages/extension/dist/content.css 2>/dev/null || touch packages/extension/dist/content.css
+  fi
+
   # Create zip for CWS upload
+  mkdir -p dist
   local zip_name="doublecheck-extension-$(node -p "require('./packages/extension/package.json').version").zip"
   (cd packages/extension/dist && zip -r "$ROOT/dist/$zip_name" .)
   ok "Extension zip: dist/$zip_name"
@@ -263,10 +272,29 @@ deploy_toolforge() {
 deploy_extension() {
   build_extension
   step "Chrome Web Store"
-  info "Extension zip ready for manual upload at:"
-  info "  https://chrome.google.com/webstore/devconsole"
-  info "  File: dist/doublecheck-extension-*.zip"
-  warn "Automated CWS publishing not yet configured."
+  if $DRY_RUN; then
+    info "[dry-run] Would upload and publish to CWS"
+    return
+  fi
+
+  if [ -z "$BUMP" ]; then
+    warn "Version bump was skipped (--no-bump). CWS requires a new version for each publish."
+    warn "The publish will fail if this version is already on the store."
+  fi
+
+  local ext_ver
+  ext_ver=$(node -p "require('./packages/extension/package.json').version")
+  info "Publishing extension v${ext_ver} to CWS..."
+
+  local zip_file
+  zip_file=$(ls -t "$ROOT"/dist/doublecheck-extension-*.zip 2>/dev/null | head -1)
+  if [ -z "$zip_file" ]; then
+    err "No extension zip found in dist/"
+    return 1
+  fi
+
+  node "$ROOT/scripts/cws-publish.mjs" --zip "$zip_file"
+  ok "Chrome Web Store v${ext_ver} published"
 }
 
 # ─── Deploy: Userscript ──────────────────────────────────────────────────────
