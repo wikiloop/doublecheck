@@ -1,6 +1,6 @@
 {
   "name": "wikiloop-doublecheck",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.31.0",
