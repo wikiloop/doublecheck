@@ -161,14 +161,6 @@ function addToolbarLink(): void {
           e.stopPropagation();
           console.log(`${LOG_PREFIX} DoubleCheck clicked (portlet: ${usedPortlet})`);
 
-          // Ensure Vue is loaded before opening modal
-          try {
-            await ensureModules();
-          } catch (err) {
-            console.error(`${LOG_PREFIX} Failed to load Vue/Codex:`, err);
-            return;
-          }
-
           const { openReviewModal, isModalOpen, closeReviewModal } = await import("./injection/native-modal.js");
           if (isModalOpen()) {
             closeReviewModal();
@@ -188,6 +180,13 @@ function addToolbarLink(): void {
  */
 async function bootstrap(): Promise<void> {
   initI18n();
+
+  // Load Vue + Codex early so IIFE globals are available for bundled components
+  try {
+    await ensureModules();
+  } catch (err) {
+    console.warn(`${LOG_PREFIX} Failed to load Vue/Codex:`, err);
+  }
 
   const pageType = detectPageType();
   const skin = (typeof mw !== "undefined" && mw.config?.get("skin")) || "unknown";
