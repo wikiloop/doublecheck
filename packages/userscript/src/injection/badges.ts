@@ -1,6 +1,6 @@
 import { fetchLiftWingScoresBatch } from "../api.js";
 import { msg } from "../i18n.js";
-import { openReviewModal } from "./modal.js";
+import { openReviewModal } from "./native-modal.js";
 
 const BADGE_CLASS = "dc-risk-badge";
 const BADGE_ATTR = "data-dc-badge";

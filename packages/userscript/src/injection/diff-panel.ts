@@ -1,6 +1,6 @@
 // Inject a floating DoubleCheck button on diff pages that opens the review modal
 
-import { openReviewModal, closeReviewModal, isModalOpen } from "./modal.js";
+import { openReviewModal, closeReviewModal, isModalOpen } from "./native-modal.js";
 
 const BUTTON_ID = "dc-review-button";
 

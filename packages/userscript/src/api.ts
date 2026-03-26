@@ -69,6 +69,21 @@ export function submitJudgement(
   });
 }
 
+/** Fetch full revision data from the DoubleCheck API. */
+export function fetchRevision(wiki: string, revId: number): Promise<Record<string, unknown>> {
+  return apiFetch<Record<string, unknown>>(`/revision/${wiki}/${revId}`);
+}
+
+/** Fetch revert eligibility check. */
+export function fetchRevertCheck(
+  wiki: string,
+  revId: number,
+): Promise<{ eligible?: boolean; reason?: string; baseRevId?: number }> {
+  return apiFetch<{ eligible?: boolean; reason?: string; baseRevId?: number }>(
+    `/revert/check/${wiki}/${revId}`,
+  );
+}
+
 /**
  * Batch-fetch LiftWing scores for multiple revisions.
  * Limits concurrency to avoid flooding the API.
