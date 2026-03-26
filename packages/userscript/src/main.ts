@@ -33,11 +33,13 @@ async function ensureModules(): Promise<void> {
   console.log(`${LOG_PREFIX} Loading ResourceLoader modules: ${modules.join(", ")}`);
   await mw.loader.using(modules);
 
-  // Assign to window globals for Vite's IIFE externals
+  // Assign to window globals for Vite's IIFE externals.
+  // In userscript context, require() is not available — use mw.loader.require() instead.
   const w = window as Record<string, unknown>;
-  w.Vue = require("vue");
+  const req = (mw.loader as unknown as { require: (m: string) => unknown }).require;
+  w.Vue = req("vue");
   if (modules.includes("@wikimedia/codex")) {
-    w.codex = require("@wikimedia/codex");
+    w.codex = req("@wikimedia/codex");
   }
 
   console.log(`${LOG_PREFIX} Modules loaded — Vue: ${!!w.Vue}, Codex: ${!!w.codex}`);
