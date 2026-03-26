@@ -1,10 +1,15 @@
 import { defineConfig, type Plugin } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const pkg = JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8"));
+let gitHash = "";
+try { gitHash = execSync("git rev-parse --short=6 HEAD", { encoding: "utf8" }).trim(); } catch { /* */ }
 
 const userscriptHeader = readFileSync(
   resolve(__dirname, "src/header.txt"),
@@ -74,6 +79,10 @@ export default defineConfig({
     },
     minify: true,
     target: "es2020",
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __GIT_HASH__: JSON.stringify(gitHash),
   },
   resolve: {
     alias: {

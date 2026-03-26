@@ -49,6 +49,11 @@ const articleHistoryReviewed = ref(0);
 const articleHistoryTitle = ref("");
 const showArticlePrompt = ref(false);
 
+declare const __APP_VERSION__: string;
+declare const __GIT_HASH__: string;
+const appVersion = __APP_VERSION__;
+const gitHash = __GIT_HASH__;
+
 const wikiUser = getWikiUser();
 
 // ── Load a specific revision ──
@@ -191,6 +196,7 @@ onUnmounted(() => { feed.stopStream(); });
     <!-- Header bar -->
     <div class="dc-review-modal__header">
       <span class="dc-review-modal__title">WikiLoop DoubleCheck</span>
+      <span class="dc-review-modal__version">v{{ appVersion }}{{ gitHash ? '+' + gitHash : '' }}</span>
       <span class="dc-review-modal__pool-info">
         {{ feed.poolRemaining.value.length }} in pool
         <span :style="{ color: feed.streamConnected.value ? '#14866d' : '#ac6600' }">
@@ -280,6 +286,7 @@ onUnmounted(() => { feed.stopStream(); });
 .dc-review-modal { display: flex; flex-direction: column; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; color: #202122; }
 .dc-review-modal__header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #eaecf0; border-bottom: 1px solid #a2a9b1; flex-shrink: 0; }
 .dc-review-modal__title { font-weight: 700; font-size: 15px; color: #36c; }
+.dc-review-modal__version { font-size: 11px; color: #72777d; font-family: monospace; }
 .dc-review-modal__pool-info { font-size: 12px; color: #54595d; }
 .dc-review-modal__user { margin-left: auto; font-size: 13px; color: #54595d; }
 .dc-review-modal__close { margin-left: 8px; background: none; border: 1px solid #a2a9b1; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #202122; }
