@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import type {
@@ -11,6 +11,7 @@ import type {
   JudgementsResponse,
   ScoredRevision,
 } from "@doublecheck/core";
+import { useReviewFeed } from "@doublecheck/core";
 import { CdxButton, CdxMessage } from "@wikimedia/codex";
 import RevisionCard from "../components/RevisionCard.vue";
 import DiffBox from "../components/DiffBox.vue";
@@ -23,11 +24,7 @@ import TagArticlePanel from "../components/TagArticlePanel.vue";
 import FeedFilters from "../components/FeedFilters.vue";
 import { useAuth } from "../composables/useAuth";
 
-const STREAM_URL =
-  "https://stream.wikimedia.org/v2/stream/mediawiki.page_revert_risk_prediction_change.v1";
-const POOL_MAX = 200;
-const MIN_POOL_BEFORE_SHOW = 1; // show first revision as soon as we get one
-const CACHE_KEY = "dc-ranked-pool";
+// Stream/pool constants now in @doublecheck/core useReviewFeed
 
 const route = useRoute();
 const { t } = useI18n();
@@ -48,20 +45,20 @@ const currentAction = ref<JudgementAction | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
 
-// History stack for Prev navigation
-const revisionHistory = ref<ScoredRevision[]>([]);
-
-// Stream-based pool state
-const rankedPool = ref<ScoredRevision[]>([]);
-const reviewedIds = ref<Set<string>>(new Set());
-const poolLoading = ref(false);
-const poolStreamStatus = ref<"connecting" | "waiting" | "ready">("connecting");
 const selectedWiki = ref("enwiki");
-const streamConnected = ref(false);
+const poolLoading = ref(false);
 
-// Feed filter state
-const filterMinScore = ref(0);
-const filterIpOnly = ref(false);
+// ── Shared review feed from @doublecheck/core ──
+const feed = useReviewFeed({ selectedWiki });
+// Aliases for template compatibility
+const rankedPool = feed.rankedPool;
+const reviewedIds = feed.reviewedIds;
+const poolStreamStatus = feed.poolStreamStatus;
+const streamConnected = feed.streamConnected;
+const poolRemaining = feed.poolRemaining;
+const revisionHistory = feed.revisionHistory;
+const filterMinScore = feed.filterMinScore;
+const filterIpOnly = feed.filterIpOnly;
 
 // Consecutive edit grouping state
 const consecutiveRevIds = ref<number[]>([]);
@@ -73,9 +70,13 @@ const pageStatus = ref<"current" | "reverted" | "new_edits" | null>(null);
 const revertedByUser = ref<string | undefined>();
 let pageStatusTimer: ReturnType<typeof setInterval> | null = null;
 
-let eventSource: EventSource | null = null;
-let initialPoolResolve: (() => void) | null = null;
-let initialPoolPromise: Promise<void> | null = null;
+// Stream lifecycle managed by feed composable
+// Local aliases for functions used in this page
+const startStream = feed.startStream;
+const stopStream = feed.stopStream;
+const waitForInitialPool = feed.waitForInitialPool;
+const restoreCachedPool = feed.restoreCachedPool;
+const persistPool = feed.persistPool;
 
 /** Fetch the user's recently reviewed revision IDs from the server. */
 async function seedReviewedIds() {
@@ -96,192 +97,7 @@ async function seedReviewedIds() {
   }
 }
 
-/** Restore cached pool from localStorage for instant reload. */
-function restoreCachedPool(): boolean {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return false;
-    const cached = JSON.parse(raw) as {
-      pool: ScoredRevision[];
-      reviewed: string[];
-      wiki: string;
-      ts: number;
-    };
-    if (cached.wiki !== selectedWiki.value) return false;
-    if (cached.pool.length === 0) return false;
-    // Expire cache after 30 minutes
-    if (cached.ts && Date.now() - cached.ts > 30 * 60 * 1000) return false;
-    rankedPool.value = cached.pool;
-    reviewedIds.value = new Set(cached.reviewed);
-    return poolRemaining.value.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-/** Save pool to localStorage so it survives page reloads. */
-function persistPool() {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
-      pool: rankedPool.value.slice(0, 100), // keep cache small
-      reviewed: [...reviewedIds.value],
-      wiki: selectedWiki.value,
-      ts: Date.now(),
-    }));
-  } catch {
-    // storage full or unavailable
-  }
-}
-
-/** Check whether a username looks like an IP address (anonymous editor). */
-function isIPUser(user: string): boolean {
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(user)) return true;
-  if (/^[0-9a-fA-F:]+$/.test(user) && user.includes(":")) return true;
-  return false;
-}
-
-const poolRemaining = computed(() =>
-  rankedPool.value.filter((r) => {
-    if (reviewedIds.value.has(`${r.wiki}:${r.revId}`)) return false;
-    if (filterMinScore.value > 0 && r.revertRisk.revertRisk < filterMinScore.value) return false;
-    if (filterIpOnly.value && !isIPUser(r.user)) return false;
-    return true;
-  })
-);
-
-/**
- * Compute a human-review priority score from raw revert risk.
- * Very high risk (>0.95) gets auto-reverted by patrol bots — deprioritize.
- * The sweet spot for human review is ~0.6-0.95 (under bot threshold but still risky).
- */
-function humanPriorityScore(revertRisk: number): number {
-  if (revertRisk >= 0.95) {
-    // Above bot threshold: still include but rank below the sweet spot
-    // Maps 0.95-1.0 → 0.55-0.50 (below the gray zone)
-    return 0.55 - (revertRisk - 0.95) * 1.0;
-  }
-  // Below bot threshold: use raw score (higher risk = higher priority)
-  return revertRisk;
-}
-
-/** Parse a Wikimedia revert-risk prediction event into a ScoredRevision. */
-function parseStreamEvent(data: Record<string, unknown>): ScoredRevision | null {
-  const wikiId = data.wiki_id as string | undefined;
-  if (!wikiId || wikiId !== selectedWiki.value) return null;
-
-  const rev = data.revision as Record<string, unknown> | undefined;
-  const page = data.page as Record<string, unknown> | undefined;
-  const performer = data.performer as Record<string, unknown> | undefined;
-  const prediction = data.predicted_classification as Record<string, unknown> | undefined;
-
-  if (!rev || !page || !prediction) return null;
-
-  const probabilities = prediction.probabilities as Record<string, number> | undefined;
-  const revertRiskProb = probabilities?.["true"] ?? 0;
-  const revId = rev.rev_id as number | undefined;
-  if (!revId) return null;
-
-  return {
-    wiki: wikiId,
-    revId,
-    parentRevId: (rev.rev_parent_id as number) ?? 0,
-    title: ((page.page_title as string) ?? "").replace(/_/g, " "),
-    timestamp: (rev.rev_dt as string) ?? new Date().toISOString(),
-    user: (performer?.user_text as string) ?? "",
-    comment: (rev.comment as string) ?? "",
-    pageId: (page.page_id as number) ?? 0,
-    revertRisk: {
-      revertRisk: revertRiskProb,
-      modelName: prediction.model_name as string | undefined,
-      modelVersion: prediction.model_version as string | undefined,
-    },
-    rankScore: humanPriorityScore(revertRiskProb),
-  };
-}
-
-/** Start subscribing to the Wikimedia revert-risk stream. */
-function startStream() {
-  if (eventSource) return;
-
-  poolStreamStatus.value = "connecting";
-  eventSource = new EventSource(STREAM_URL);
-  streamConnected.value = false;
-
-  eventSource.onopen = () => {
-    streamConnected.value = true;
-    if (poolStreamStatus.value === "connecting") {
-      poolStreamStatus.value = "waiting";
-    }
-  };
-
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      const scored = parseStreamEvent(data);
-      if (!scored) return;
-
-      // Skip if already in pool or already reviewed
-      const key = `${scored.wiki}:${scored.revId}`;
-      if (reviewedIds.value.has(key)) return;
-      if (rankedPool.value.some((r) => r.wiki === scored.wiki && r.revId === scored.revId)) return;
-
-      // Insert into pool maintaining sorted order (highest risk first)
-      const pool = rankedPool.value;
-      let i = 0;
-      while (i < pool.length && pool[i].rankScore >= scored.rankScore) i++;
-      pool.splice(i, 0, scored);
-
-      // Trim to max size
-      if (pool.length > POOL_MAX) {
-        pool.length = POOL_MAX;
-      }
-
-      rankedPool.value = pool;
-      persistPool();
-
-      // Resolve initial pool promise once we have enough items
-      if (initialPoolResolve && poolRemaining.value.length >= MIN_POOL_BEFORE_SHOW) {
-        initialPoolResolve();
-        initialPoolResolve = null;
-      }
-    } catch {
-      // ignore parse errors
-    }
-  };
-
-  eventSource.onerror = () => {
-    streamConnected.value = false;
-    // EventSource auto-reconnects
-  };
-}
-
-function stopStream() {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-    streamConnected.value = false;
-  }
-}
-
-/** Wait for the initial pool to fill up. */
-function waitForInitialPool(): Promise<void> {
-  if (poolRemaining.value.length >= MIN_POOL_BEFORE_SHOW) {
-    return Promise.resolve();
-  }
-  if (!initialPoolPromise) {
-    initialPoolPromise = new Promise<void>((resolve) => {
-      initialPoolResolve = resolve;
-      // Timeout: don't wait forever, show whatever we have after 3s
-      setTimeout(() => {
-        if (initialPoolResolve) {
-          initialPoolResolve();
-          initialPoolResolve = null;
-        }
-      }, 3_000);
-    });
-  }
-  return initialPoolPromise;
-}
+// Pool/stream functions removed — now provided by useReviewFeed via `feed.*`
 
 /** Poll MediaWiki to check if the current page has new revisions since ours. */
 async function checkPageStatus() {
@@ -482,16 +298,13 @@ async function loadRevision(wiki?: string, revId?: string | number) {
 }
 
 function loadNextFromPool() {
-  const remaining = poolRemaining.value;
-  if (remaining.length === 0) return;
+  const next = feed.loadNextFromPool();
+  if (!next) return;
 
   // Push current revision onto history stack for Prev navigation
   if (revision.value) {
-    const cur = revision.value as ScoredRevision;
-    revisionHistory.value.push(cur);
+    feed.pushHistory(revision.value as ScoredRevision);
   }
-
-  const next = remaining[0];
   revision.value = next;
   revertRiskScore.value = next.revertRisk;
   liftWingScore.value = next.liftWing;
@@ -547,8 +360,7 @@ async function onJudge(action: JudgementAction) {
     await loadJudgements(revision.value.wiki, revision.value.revId);
 
     // Track this revision as reviewed
-    reviewedIds.value.add(`${revision.value.wiki}:${revision.value.revId}`);
-    persistPool();
+    feed.markReviewed(revision.value.wiki, revision.value.revId);
   } catch {
     // ignore
   } finally {
@@ -559,13 +371,10 @@ async function onJudge(action: JudgementAction) {
 async function loadNext() {
   // Mark current revision as reviewed so pool skips it
   if (revision.value) {
-    reviewedIds.value.add(`${revision.value.wiki}:${revision.value.revId}`);
-    persistPool();
+    feed.markReviewed(revision.value.wiki, revision.value.revId);
   }
   if (poolRemaining.value.length === 0) {
-    // Pool empty — wait for stream to deliver something
     poolLoading.value = true;
-    initialPoolPromise = null; // reset so waitForInitialPool creates a fresh promise
     await waitForInitialPool();
     poolLoading.value = false;
   }
@@ -573,8 +382,8 @@ async function loadNext() {
 }
 
 function loadPrev() {
-  if (revisionHistory.value.length === 0) return;
-  const prev = revisionHistory.value.pop()!;
+  const prev = feed.popHistory();
+  if (!prev) return;;
   revision.value = prev;
   revertRiskScore.value = prev.revertRisk;
   liftWingScore.value = prev.liftWing;
@@ -592,7 +401,7 @@ function loadPrev() {
   startPageStatusPolling();
 }
 
-const hasPrev = computed(() => revisionHistory.value.length > 0);
+const hasPrev = feed.hasPrev;
 
 function onKeydown(e: KeyboardEvent) {
   // Ignore when typing in an input/textarea
