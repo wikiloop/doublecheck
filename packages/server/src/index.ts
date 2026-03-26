@@ -91,7 +91,7 @@ export function createApp(): Hono {
   app.use(
     "/doublecheck.user.js",
     serveStatic({
-      root: repoRoot + "packages/userscript",
+      root: repoRoot + "packages/userscript/dist",
       path: "wikiloop-doublecheck.user.js",
     }),
   );
