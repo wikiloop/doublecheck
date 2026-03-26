@@ -167,6 +167,7 @@ build_extension() {
 
   # Copy static files that Vite doesn't handle
   cp packages/extension/manifest.json packages/extension/dist/
+  cp packages/extension/csp-rules.json packages/extension/dist/
   cp -r packages/extension/icons packages/extension/dist/
   # Generate content.css if not produced by Vite
   if [ ! -f packages/extension/dist/content.css ]; then

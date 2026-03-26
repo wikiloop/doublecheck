@@ -107,9 +107,16 @@ async function bootstrap(): Promise<void> {
   }
 
   if (pageType === "diff") {
+    // Diff pages: inject floating button (no Vue needed — review UI is in the iframe)
     const { mountDiffPanel } = await import("./injection/diff-panel.js");
     mountDiffPanel();
   } else {
+    // RC/Watchlist: inject risk badges + click to open review modal
+    try {
+      await ensureVue();
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} ${err instanceof Error ? err.message : err}`);
+    }
     const { injectBadges } = await import("./injection/badges.js");
     await injectBadges();
   }

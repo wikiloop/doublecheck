@@ -1,6 +1,7 @@
 // Inject risk badges on RecentChanges and Watchlist pages
 
 import { apiGet } from "./api.js";
+import { openReviewModal } from "./inject-modal.js";
 
 const BADGE_CLASS = "dc-risk-badge";
 const PROCESSED_ATTR = "data-dc-processed";
@@ -43,6 +44,12 @@ async function fetchAndInjectBadge(
 
     if (result.status === 200 && result.data) {
       const badge = createBadge(result.data.damaging);
+      // Click badge to open review modal for this revision
+      badge.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (revId && wiki) openReviewModal(wiki, revId);
+      });
       link.parentElement?.insertBefore(badge, link.nextSibling);
     }
   } catch {
@@ -83,6 +90,7 @@ function createBadge(damagingScore: number): HTMLSpanElement {
     font-weight: 600;
     color: ${color};
     background: ${bgColor};
+    cursor: pointer;
   `;
 
   return badge;

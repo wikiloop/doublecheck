@@ -1,5 +1,6 @@
 import { fetchLiftWingScoresBatch } from "../api.js";
 import { msg } from "../i18n.js";
+import { openReviewModal } from "./modal.js";
 
 const BADGE_CLASS = "dc-risk-badge";
 const BADGE_ATTR = "data-dc-badge";
@@ -105,6 +106,14 @@ export async function injectBadges(): Promise<void> {
     badge.title = `Damaging: ${Math.round(score.damaging * 100)}%`;
 
     row.setAttribute(BADGE_ATTR, "true");
+
+    // Click badge to open review modal for this revision
+    badge.style.cursor = "pointer";
+    badge.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openReviewModal(wiki, revId);
+    });
 
     // Insert badge near the beginning of the row for visibility
     const firstLink = row.querySelector("a");

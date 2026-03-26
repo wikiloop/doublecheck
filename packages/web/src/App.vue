@@ -2,8 +2,12 @@
 import { onMounted } from "vue";
 import AppLayout from "./layouts/AppLayout.vue";
 import { useAuth } from "./composables/useAuth";
+import { useEmbed } from "./composables/useEmbed";
 
 const { checkAuth } = useAuth();
+const { isEmbed, init: initEmbed } = useEmbed();
+
+initEmbed();
 
 onMounted(() => {
   checkAuth();
@@ -11,7 +15,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout>
+  <!-- Embed mode: no header/footer, just the page content -->
+  <div v-if="isEmbed" class="dc-embed-root">
+    <router-view />
+  </div>
+  <AppLayout v-else>
     <router-view />
   </AppLayout>
 </template>
@@ -35,5 +43,11 @@ body {
 
 a {
   color: var(--color-progressive);
+}
+
+.dc-embed-root {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
 }
 </style>

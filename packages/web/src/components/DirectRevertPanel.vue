@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RevertCheckResponse, RevertResponse, RevertMode, WarnLevelResponse, WarnResponse } from "@doublecheck/core";
 import { CdxButton, CdxMessage, CdxTextInput } from "@wikimedia/codex";
+import { useEmbed } from "../composables/useEmbed";
 
 const props = defineProps<{
   wiki: string;
@@ -14,6 +15,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const { isEmbed, requestWikiAction } = useEmbed();
 
 function revertRevisionUrl(newRevId: number): string {
   const match = props.wiki.match(/^(\w+)wiki$/);
@@ -52,6 +54,29 @@ async function doRevert(mode: RevertMode) {
   revertMode.value = mode;
   reverting.value = true;
   revertResult.value = null;
+
+  if (isEmbed.value) {
+    // Embed mode: revert via parent window's Wikipedia session (postMessage bridge)
+    try {
+      const result = await requestWikiAction<RevertResponse>("revert", {
+        wiki: props.wiki,
+        revId: props.revId,
+        baseRevId: props.baseRevId ?? eligibility.value?.baseRevId,
+        mode,
+        reason: reason.value.trim() || undefined,
+      });
+      revertResult.value = result;
+    } catch (e) {
+      revertResult.value = {
+        success: false,
+        error: e instanceof Error ? e.message : "Revert failed",
+      };
+    } finally {
+      reverting.value = false;
+    }
+    return;
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30_000);
   try {
@@ -113,18 +138,28 @@ async function postWarning() {
   warnState.value = "posting";
   try {
     const level = selectedWarnLevel.value === "4im" ? "4im" : parseInt(selectedWarnLevel.value, 10);
-    const res = await fetch("/api/warn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
+
+    if (isEmbed.value) {
+      warnResult.value = await requestWikiAction<WarnResponse>("warn", {
         wiki: props.wiki,
         username: props.revisionUser,
         articleTitle: props.title,
         level,
-      }),
-    });
-    warnResult.value = await res.json();
+      });
+    } else {
+      const res = await fetch("/api/warn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          wiki: props.wiki,
+          username: props.revisionUser,
+          articleTitle: props.title,
+          level,
+        }),
+      });
+      warnResult.value = await res.json();
+    }
     warnState.value = warnResult.value!.success ? "done" : "error";
   } catch {
     warnResult.value = { success: false, error: "Network error" };

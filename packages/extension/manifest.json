@@ -5,12 +5,23 @@
   "description": "Crowdsourced vandalism review for Wikipedia",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://*.wikipedia.org/*",
-    "https://wikiloop-doublecheck.toolforge.org/*"
+    "https://wikiloop-doublecheck.toolforge.org/*",
+    "https://doublecheck.wikiloop.org/*"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "csp_rules",
+        "enabled": true,
+        "path": "csp-rules.json"
+      }
+    ]
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

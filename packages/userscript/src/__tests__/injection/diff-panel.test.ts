@@ -15,6 +15,7 @@ function setupMwGlobal() {
         if (k === "wgDiffNewId") return 12345;
         if (k === "wgDBname") return "enwiki";
         if (k === "wgRevisionId") return 12345;
+        if (k === "wgUserGroups") return ["*", "user"];
         return null;
       }),
     },
@@ -29,7 +30,6 @@ function setupMwGlobal() {
 describe("diff-panel injection", () => {
   beforeEach(() => {
     setupMwGlobal();
-    // Create a fake diff container
     document.body.innerHTML = '<div id="bodyContent"><table class="diff"></table></div>';
   });
 
@@ -39,34 +39,43 @@ describe("diff-panel injection", () => {
     delete (globalThis as Record<string, unknown>).mw;
   });
 
-  it("mounts the panel after the diff table", () => {
+  it("mounts the floating review button", () => {
     mountDiffPanel();
-    const panel = document.getElementById("dc-review-panel");
-    expect(panel).not.toBeNull();
+    const btn = document.getElementById("dc-review-button");
+    expect(btn).not.toBeNull();
+    expect(btn?.textContent).toContain("DoubleCheck");
   });
 
   it("does not mount twice", () => {
     mountDiffPanel();
     mountDiffPanel();
-    const panels = document.querySelectorAll("#dc-review-panel");
-    expect(panels.length).toBe(1);
+    const buttons = document.querySelectorAll("#dc-review-button");
+    expect(buttons.length).toBe(1);
   });
 
-  it("unmount removes the panel", () => {
+  it("unmount removes the button", () => {
     mountDiffPanel();
-    expect(document.getElementById("dc-review-panel")).not.toBeNull();
+    expect(document.getElementById("dc-review-button")).not.toBeNull();
 
     unmountDiffPanel();
-    expect(document.getElementById("dc-review-panel")).toBeNull();
+    expect(document.getElementById("dc-review-button")).toBeNull();
   });
 
-  it("warns if no diff container found", () => {
-    document.body.innerHTML = "";
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it("does nothing if no revision ID found", () => {
+    const g = globalThis as Record<string, unknown>;
+    g.mw = {
+      ...g.mw as object,
+      config: {
+        get: vi.fn(() => null),
+      },
+    };
+    // Clear URL params too
+    Object.defineProperty(window, "location", {
+      value: new URL("https://en.wikipedia.org/wiki/Test"),
+      writable: true,
+      configurable: true,
+    });
     mountDiffPanel();
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Could not find diff container"),
-    );
-    warnSpy.mockRestore();
+    expect(document.getElementById("dc-review-button")).toBeNull();
   });
 });

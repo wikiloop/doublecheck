@@ -3,6 +3,7 @@
 import { detectPageType, extractRevisionId, extractWikiId } from "./detection.js";
 import { injectReviewPanel, cleanupReviewPanel } from "./inject-panel.js";
 import { injectRiskBadges, cleanupRiskBadges } from "./inject-badges.js";
+import { closeReviewModal } from "./inject-modal.js";
 
 function main(): void {
   const pageType = detectPageType();
@@ -40,6 +41,7 @@ function injectListPageUI(): void {
 function cleanup(): void {
   cleanupReviewPanel();
   cleanupRiskBadges();
+  closeReviewModal();
 }
 
 // Listen for SSE events from the background worker

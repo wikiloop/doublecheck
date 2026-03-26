@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { CdxButton, CdxMessage } from "@wikimedia/codex";
+import { useEmbed } from "../composables/useEmbed";
 
 const props = defineProps<{
   wiki: string;
@@ -10,6 +11,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const { isEmbed, requestWikiAction } = useEmbed();
 
 // --- MW Thanks (notify) ---
 const notifying = ref(false);
@@ -19,13 +21,20 @@ async function doNotifyThank() {
   notifying.value = true;
   notifyResult.value = null;
   try {
-    const res = await fetch("/api/thank/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ wiki: props.wiki, revId: props.revId }),
-    });
-    notifyResult.value = await res.json();
+    if (isEmbed.value) {
+      notifyResult.value = await requestWikiAction<{ success: boolean; error?: string }>("thank", {
+        wiki: props.wiki,
+        revId: props.revId,
+      });
+    } else {
+      const res = await fetch("/api/thank/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ wiki: props.wiki, revId: props.revId }),
+      });
+      notifyResult.value = await res.json();
+    }
   } catch {
     notifyResult.value = { success: false, error: "Network error" };
   } finally {

@@ -83,41 +83,30 @@ describe("Page type detection", () => {
   });
 });
 
-describe("Panel injection", () => {
+describe("Panel injection (floating button)", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
   });
 
-  it("creates a mount point for the review panel", async () => {
-    // Set up a mock diff page
+  it("creates a floating review button", async () => {
     setLocation("https://en.wikipedia.org/w/index.php?diff=12345&oldid=12344");
 
-    const diffTable = document.createElement("table");
-    diffTable.className = "diff";
-    document.body.appendChild(diffTable);
-
-    // Import and call the injection function
     const { injectReviewPanel, cleanupReviewPanel } = await import(
       "../../content/inject-panel.js"
     );
 
     injectReviewPanel("enwiki", 12345);
 
-    const mountPoint = document.getElementById("dc-review-panel-root");
-    expect(mountPoint).not.toBeNull();
-    expect(mountPoint?.shadowRoot).not.toBeNull();
+    const btn = document.getElementById("dc-review-button");
+    expect(btn).not.toBeNull();
+    expect(btn?.textContent).toContain("DoubleCheck");
 
-    // Clean up
     cleanupReviewPanel();
-    expect(document.getElementById("dc-review-panel-root")).toBeNull();
+    expect(document.getElementById("dc-review-button")).toBeNull();
   });
 
-  it("cleans up previous panel before injecting a new one", async () => {
+  it("cleans up previous button before injecting a new one", async () => {
     setLocation("https://en.wikipedia.org/w/index.php?diff=12345&oldid=12344");
-
-    const diffTable = document.createElement("table");
-    diffTable.className = "diff";
-    document.body.appendChild(diffTable);
 
     const { injectReviewPanel, cleanupReviewPanel } = await import(
       "../../content/inject-panel.js"
@@ -126,8 +115,8 @@ describe("Panel injection", () => {
     injectReviewPanel("enwiki", 12345);
     injectReviewPanel("enwiki", 12346);
 
-    const mountPoints = document.querySelectorAll("#dc-review-panel-root");
-    expect(mountPoints.length).toBe(1);
+    const buttons = document.querySelectorAll("#dc-review-button");
+    expect(buttons.length).toBe(1);
 
     cleanupReviewPanel();
   });
