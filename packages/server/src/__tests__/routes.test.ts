@@ -49,6 +49,8 @@ vi.mock("../lib/mediawiki.js", () => ({
   fetchDiffFromMW: vi.fn().mockResolvedValue(null),
   fetchRecentChanges: vi.fn(),
   verifyMWToken: vi.fn(),
+  fetchCsrfToken: vi.fn().mockResolvedValue(null),
+  markAsPatrolled: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock("../lib/liftWingCache.js", () => ({

@@ -24,6 +24,9 @@ export const API_PATHS = {
   revertCheck: "/api/revert/check/:wiki/:revId",
   revert: "/api/revert",
   thank: "/api/thank",
+  warnLevel: "/api/warn/level",
+  warn: "/api/warn",
+  tag: "/api/tag",
   authLogin: "/api/auth/login",
   authCallback: "/api/auth/callback",
   authMe: "/api/auth/me",
@@ -123,12 +126,19 @@ export interface RevertCheckResponse {
   baseRevId?: number;
 }
 
+/** Revert mode determines the edit summary tone */
+export type RevertMode = "vandalism" | "goodfaith";
+
 /** POST /api/revert */
 export interface RevertRequest {
   wiki: string;
   revId: number;
   /** For multi-revision revert: the base revision to undo after (last rev by a different user). */
   baseRevId?: number;
+  /** Revert mode — "vandalism" (default) or "goodfaith" (AGF revert) */
+  mode?: RevertMode;
+  /** Optional custom reason appended to the edit summary */
+  reason?: string;
 }
 
 export interface RevertResponse {
@@ -136,6 +146,52 @@ export interface RevertResponse {
   newRevId?: number;
   error?: string;
   errorCode?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Warn endpoint types
+// ---------------------------------------------------------------------------
+
+/** Warning level: 1-4 for escalating severity, "4im" for immediate final */
+export type WarningLevel = 1 | 2 | 3 | 4 | "4im";
+
+/** GET /api/warn/level?wiki=enwiki&user=Example */
+export interface WarnLevelResponse {
+  /** The highest existing warning level found on the user's talk page this month (0 = none) */
+  level: number;
+  /** The recommended next warning level to post */
+  autoLevel: WarningLevel;
+}
+
+/** POST /api/warn */
+export interface WarnRequest {
+  wiki: string;
+  username: string;
+  articleTitle: string;
+  /** If omitted, auto-detects from talk page and increments */
+  level?: WarningLevel;
+}
+
+export interface WarnResponse {
+  success: boolean;
+  level?: WarningLevel;
+  error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Tag endpoint types
+// ---------------------------------------------------------------------------
+
+/** POST /api/tag */
+export interface TagRequest {
+  wiki: string;
+  title: string;
+  tags: string[];
+}
+
+export interface TagResponse {
+  success: boolean;
+  error?: string;
 }
 
 // ---------------------------------------------------------------------------

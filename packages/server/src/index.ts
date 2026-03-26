@@ -19,6 +19,8 @@ import { auth } from "./routes/auth.js";
 import { events } from "./routes/events.js";
 import { revert } from "./routes/revert.js";
 import { thank } from "./routes/thank.js";
+import { warn } from "./routes/warn.js";
+import { tag } from "./routes/tag.js";
 import { rankedFeed } from "./routes/rankedFeed.js";
 import { startRevertRiskStream } from "./lib/revertRiskStream.js";
 import { readFileSync } from "node:fs";
@@ -41,7 +43,11 @@ export function createApiApp(): Hono {
   // Rate limiting: writes (POST) get stricter limits
   app.use("/api/judgement", writeLimiter);
   app.use("/api/revert", writeLimiter);
+  app.use("/api/thank/notify", writeLimiter);
+  app.use("/api/thank/talkpage", writeLimiter);
   app.use("/api/thank", writeLimiter);
+  app.use("/api/warn", writeLimiter);
+  app.use("/api/tag", writeLimiter);
   app.use("/api/*", readLimiter);
 
   // Health check
@@ -68,6 +74,8 @@ export function createApiApp(): Hono {
   app.route("/api/events", events);
   app.route("/api/revert", revert);
   app.route("/api/thank", thank);
+  app.route("/api/warn", warn);
+  app.route("/api/tag", tag);
 
   return app;
 }

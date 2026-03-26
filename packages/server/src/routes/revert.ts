@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { RevertRequest, RevertCheckResponse, RevertResponse } from "@doublecheck/core";
+import type { RevertRequest, RevertCheckResponse, RevertResponse, RevertMode } from "@doublecheck/core";
 import { getSession, updateSessionTokens } from "../middleware/session.js";
 import { InteractionModel } from "../db/models/index.js";
 import {
@@ -20,16 +20,34 @@ function pageHistoryUrl(wiki: string, title: string): string {
 }
 
 /** Build the edit summary for a revert */
-function editSummary(revIds: number[], username: string, wiki: string, origin?: string): string {
+function editSummary(
+  revIds: number[],
+  username: string,
+  wiki: string,
+  mode: RevertMode = "vandalism",
+  reason?: string,
+  origin?: string,
+): string {
   const domain = origin ?? "https://doublecheck.wikiloop.org";
   const revPart =
     revIds.length === 1
       ? `Reverted revision ${revIds[0]} by [[User:${username}]]`
       : `Reverted ${revIds.length} consecutive edits by [[User:${username}]] (revisions ${revIds.join(", ")})`;
+
+  const reasonSuffix = reason ? ` Reason: ${reason}.` : "";
+
+  if (mode === "goodfaith") {
+    return (
+      `Reverted [[Wikipedia:Assume good faith|good faith]] edit(s) by [[User:${username}]]` +
+      (revIds.length > 1 ? ` (revisions ${revIds.join(", ")})` : "") +
+      `: reviewed with [[m:WikiLoop DoubleCheck|WikiLoop DoubleCheck]] (${domain}).${reasonSuffix}`
+    );
+  }
+
   return (
     `${revPart}: ` +
     `Revert made with [[m:WikiLoop DoubleCheck|WikiLoop DoubleCheck]] (${domain}), ` +
-    `reviewer deemed the revision as damaging and possibly vandalism. ` +
+    `reviewer deemed the revision as damaging and possibly [[Wikipedia:Vandalism|vandalism]].${reasonSuffix} ` +
     `Report abuse at [[Wikipedia talk:WikiLoop DoubleCheck]].`
   );
 }
@@ -163,7 +181,7 @@ revert.post("/", async (c) => {
     // Perform the undo — use the request origin so the summary shows the correct domain
     const origin = c.req.header("origin") ?? "https://doublecheck.wikiloop.org";
     const revIdsForSummary = eligibility.consecutiveRevIds ?? [body.revId];
-    const summary = editSummary(revIdsForSummary, rev.user, body.wiki, origin);
+    const summary = editSummary(revIdsForSummary, rev.user, body.wiki, body.mode, body.reason, origin);
     const result = await performUndo(body.wiki, activeToken, {
       title: rev.title,
       revId: body.revId,

@@ -19,6 +19,8 @@ import JudgementPanel from "../components/JudgementPanel.vue";
 import DirectRevertPanel from "../components/DirectRevertPanel.vue";
 import ThankAuthorPanel from "../components/ThankAuthorPanel.vue";
 import GoogleSearchPanel from "../components/GoogleSearchPanel.vue";
+import TagArticlePanel from "../components/TagArticlePanel.vue";
+import FeedFilters from "../components/FeedFilters.vue";
 import { useAuth } from "../composables/useAuth";
 
 const STREAM_URL =
@@ -56,6 +58,10 @@ const poolLoading = ref(false);
 const poolStreamStatus = ref<"connecting" | "waiting" | "ready">("connecting");
 const selectedWiki = ref("enwiki");
 const streamConnected = ref(false);
+
+// Feed filter state
+const filterMinScore = ref(0);
+const filterIpOnly = ref(false);
 
 // Consecutive edit grouping state
 const consecutiveRevIds = ref<number[]>([]);
@@ -127,8 +133,20 @@ function persistPool() {
   }
 }
 
+/** Check whether a username looks like an IP address (anonymous editor). */
+function isIPUser(user: string): boolean {
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(user)) return true;
+  if (/^[0-9a-fA-F:]+$/.test(user) && user.includes(":")) return true;
+  return false;
+}
+
 const poolRemaining = computed(() =>
-  rankedPool.value.filter((r) => !reviewedIds.value.has(`${r.wiki}:${r.revId}`))
+  rankedPool.value.filter((r) => {
+    if (reviewedIds.value.has(`${r.wiki}:${r.revId}`)) return false;
+    if (filterMinScore.value > 0 && r.revertRisk.revertRisk < filterMinScore.value) return false;
+    if (filterIpOnly.value && !isIPUser(r.user)) return false;
+    return true;
+  })
 );
 
 /**
@@ -657,6 +675,11 @@ onUnmounted(() => {
         </span>
       </div>
 
+      <FeedFilters
+        v-model:min-score="filterMinScore"
+        v-model:ip-only="filterIpOnly"
+      />
+
       <CdxMessage
         v-if="pageStatus === 'reverted'"
         type="success"
@@ -742,6 +765,11 @@ onUnmounted(() => {
         v-if="currentAction === 'NotSure'"
         :title="revision.title"
         :comment="revision.comment"
+      />
+
+      <TagArticlePanel
+        :wiki="revision.wiki"
+        :title="revision.title"
       />
 
       <div class="dc-review-page__nav">

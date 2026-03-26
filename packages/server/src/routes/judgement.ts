@@ -8,6 +8,7 @@ import type {
 import { InteractionModel } from "../db/models/index.js";
 import { getSession } from "../middleware/session.js";
 import { eventBus } from "../lib/eventBus.js";
+import { fetchCsrfToken, markAsPatrolled } from "../lib/mediawiki.js";
 
 const judgement = new Hono();
 
@@ -95,6 +96,24 @@ judgement.post("/", async (c) => {
     userId,
     timestamp: response.timestamp,
   });
+
+  // Auto-patrol: mark the revision as patrolled in Wikipedia's system (fire-and-forget).
+  // Only attempt if the user has an active OAuth session; silently ignore failures
+  // (user may lack patrol rights, token may be expired, etc.).
+  if (session?.accessToken) {
+    const allRevIds = [body.revId, ...(body.additionalRevIds ?? [])];
+    fetchCsrfToken(body.wiki, session.accessToken)
+      .then((csrfToken) => {
+        if (!csrfToken) return;
+        for (const rid of allRevIds) {
+          markAsPatrolled(body.wiki, session.accessToken!, {
+            revId: rid,
+            csrfToken,
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }
 
   return c.json(response, 201);
 });

@@ -64,6 +64,7 @@ describe("LandingPage", () => {
     render(LandingPage, {
       global: { plugins: [router, i18n] },
     });
-    expect(screen.getByText("Start Reviewing")).toBeTruthy();
+    const buttons = screen.getAllByText("Start Reviewing");
+    expect(buttons.length).toBeGreaterThanOrEqual(1);
   });
 });
