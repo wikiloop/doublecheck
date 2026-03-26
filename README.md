@@ -4,6 +4,8 @@
 
 Community tool for reviewing Wikipedia edits using AI-assisted scoring and human judgement. Available as a **web app**, **Wikipedia userscript**, and **Chrome extension**.
 
+WikiLoop DoubleCheck was originally developed at Google (as `google/wikiloop-doublecheck`). Since the author left Google, the project has moved to **[github.com/wikiloop](https://github.com/wikiloop)** and is now maintained entirely through community contributions. **Help wanted and welcome** — whether you're a developer, Wikipedia editor, or researcher, we'd love your involvement.
+
 **[Start Reviewing](https://doublecheck.wikiloop.org/review)** | **[Install UserScript](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Chrome Extension](https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn)** | **[Wikipedia Project Page](https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck)** | **[Discord](https://discord.gg/daZXxPB)**
 
 <!-- TODO: Add review flow GIF here -->
