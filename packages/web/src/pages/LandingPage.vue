@@ -165,7 +165,7 @@ onMounted(() => {
           </div>
         </a>
         <a
-          href="https://github.com/wikiloop/doublecheck/raw/master/packages/userscript/wikiloop-doublecheck.user.js"
+          href="https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js"
           class="dc-use__card"
           target="_blank"
           rel="noopener"
@@ -178,6 +178,15 @@ onMounted(() => {
             <span>For Tampermonkey / Greasemonkey</span>
           </div>
         </a>
+      </div>
+      <div class="dc-use__commonjs">
+        <p>Or add this line to your <a href="https://en.wikipedia.org/wiki/Special:MyPage/common.js" target="_blank" rel="noopener">Wikipedia common.js</a>:</p>
+        <code class="dc-use__code">mw.loader.load('https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js');</code>
+        <p class="dc-use__commonjs-note">
+          No browser extension needed. Works with your Wikipedia login for direct revert, thank, and warn actions.
+          <br>
+          See <a href="https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck" target="_blank" rel="noopener">Wikipedia:WikiLoop DoubleCheck</a> for details.
+        </p>
       </div>
     </section>
 
@@ -391,6 +400,45 @@ onMounted(() => {
   font-size: 0.8rem;
   color: var(--color-subtle);
   margin-top: 0.15rem;
+}
+
+.dc-use__commonjs {
+  max-width: 640px;
+  margin: 1.5rem auto 0;
+  text-align: left;
+  background: var(--background-color-neutral-subtle);
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+.dc-use__commonjs p {
+  font-size: 0.9rem;
+  color: var(--color-subtle);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
+.dc-use__code {
+  display: block;
+  background: var(--background-color-base);
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-family: monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  margin-bottom: 0.75rem;
+  color: var(--color-base);
+}
+
+.dc-use__commonjs-note {
+  font-size: 0.8rem !important;
+  color: var(--color-placeholder) !important;
+}
+
+.dc-use__commonjs-note a {
+  color: var(--color-progressive);
 }
 
 /* How It Works */

@@ -1,0 +1,157 @@
+{{tool warning|access=1}}
+{{Shortcut|WP:LOOP|WP:DOUBLECHECK}}
+<noinclude>{{pp-move-indef}}</noinclude>{{Infobox software
+| name = WikiLoop DoubleCheck
+| logo = Wikiloop_DoubleCheck_logo.png
+| screenshot = WikiLoop Battlefield-demo-1.2.0-beta.gif
+| caption = WikiLoop DoubleCheck will now show vandalism
+| developer = Zainan Zhou
+| released = {{Start date and age|2019|06}}
+| latest release version = 5.6.1
+| latest release date = {{Start date and age|2026|03|26}}
+| repo = {{URL|https://github.com/wikiloop/doublecheck}}
+| programming language = [[TypeScript]], [[Vue.js]]
+| platform = Web, Chrome Extension, UserScript
+| genre = [[Wikipedia:Vandalism|Vandalism]] detection on Wikipedia
+| license = [[Apache License|Apache-2.0]]
+| website = {{URL|https://doublecheck.wikiloop.org/}}
+}}
+{{Portal|Free and open-source software}}
+<br/><div style="text-align:center;">{{Clickable button 2|Start reviewing|class=mw-ui-progressive|url=https://doublecheck.wikiloop.org/review}}
+{{Clickable button 2|Install as UserScript|url=#Installation}}
+{{Clickable button 2|Join chat on Discord|url=https://discord.gg/daZXxPB}}</div><br/>
+
+'''WikiLoop DoubleCheck''' (previously WikiLoop Battlefield) is an open-source, crowd-sourced, counter vandalism tool for Wikipedia. It is available as a '''web application''', a '''Chrome extension''', and a '''userscript''' that runs directly on Wikipedia pages.
+
+Different from other tools like Huggle, which requires [[WP:Rollback]] permission to start using, WikiLoop DoubleCheck uses a tiered, trusted model. Just like Wikipedia aspires to be something "anyone can edit", WikiLoop DoubleCheck allows everyone to review and label a revision with their opinion, while allowing higher-tier trusted editors (such as admins or those with WP:Rollback permissions) to conduct faster and more powerful actions like direct-revert, warn, and thank.
+
+== Installation ==
+
+WikiLoop DoubleCheck can be used in three ways:
+
+=== Web application ===
+Visit [https://doublecheck.wikiloop.org/review doublecheck.wikiloop.org/review] — no installation needed.
+
+=== UserScript (recommended for Wikipedia editors) ===
+The userscript integrates directly into Wikipedia. On diff pages, it adds a floating button that opens the full DoubleCheck review interface in a modal overlay. On [[Special:RecentChanges]] and [[Special:Watchlist]], it shows risk scores on each edit. When you revert or thank, it uses '''your own Wikipedia session''' — actions appear under your account.
+
+To install, add this line to your [[Special:MyPage/common.js|common.js]]:
+<syntaxhighlight lang="javascript">
+mw.loader.load('https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js');
+</syntaxhighlight>
+
+Or, if you use [[Wikipedia:Tampermonkey|Tampermonkey]] or [[Wikipedia:Greasemonkey|Greasemonkey]], install directly from: [https://wikiloop-doublecheck.toolforge.org/doublecheck.user.js doublecheck.user.js]
+
+=== Chrome extension ===
+Install from the [https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn Chrome Web Store]. The extension works the same as the userscript — it adds a review button on diff pages and risk badges on RecentChanges/Watchlist.
+
+== Features ==
+
+* '''Review interface''' — Full diff viewer with ML-based risk scores ([[mw:ORES|ORES]]/LiftWing damaging and good-faith probabilities)
+* '''Judgement actions''' — Mark revisions as "Should Revert", "Not Sure", or "Looks Good"
+* '''Direct revert''' — Undo edits directly using your Wikipedia session (vandalism or good-faith revert modes)
+* '''Warn user''' — Post warning templates (levels 1–4 and 4im) to the editor's talk page after reverting
+* '''Thank author''' — Send MW thanks notifications for good edits
+* '''Risk badges''' — Colored risk indicators on [[Special:RecentChanges]] and [[Special:Watchlist]] rows
+* '''Real-time feed''' — Live stream from Wikimedia EventStreams, ranked by human-review priority
+* '''Keyboard shortcuts''' — R (revert), G (looks good), N (not sure + skip), Arrow keys (prev/next)
+* '''Leaderboard''' — See top reviewers at [https://doublecheck.wikiloop.org/leaderboard /leaderboard]
+* '''Article maintenance''' — Tag articles with maintenance templates (for experienced editors)
+
+Issues can be reported on the [https://github.com/wikiloop/doublecheck/issues GitHub issue tracker].
+
+== How it works ==
+
+When using the userscript or Chrome extension on Wikipedia:
+
+# You visit a diff page (e.g., <code>Special:Diff/12345</code>) or [[Special:RecentChanges]]
+# DoubleCheck shows a floating "Review with DoubleCheck" button
+# Clicking it opens a modal overlay (80% of page) with the full review interface
+# You can review the diff, see ML risk scores, and cast your judgement
+# If you judge "Should Revert", you can directly revert using your own Wikipedia account
+# The revert is attributed to you and uses standard MediaWiki edit summaries with a <code>[[WP:DC|DoubleCheck]]</code> tag
+
+== Technical details ==
+
+* '''Hosted on''' [[Toolforge]] ([https://wikiloop-doublecheck.toolforge.org wikiloop-doublecheck.toolforge.org]) and [[Vercel]] ([https://doublecheck.wikiloop.org doublecheck.wikiloop.org])
+* '''Tech stack:''' [[TypeScript]], [[Vue.js]] 3, [[Node.js]], [[MongoDB]], Wikimedia [[mw:Codex|Codex]] UI
+* '''ML scoring:''' Wikimedia [https://wikitech.wikimedia.org/wiki/Machine_Learning/LiftWing LiftWing] (damaging + good-faith) and [https://meta.wikimedia.org/wiki/Machine_learning_models/Proposed/Language-agnostic_revert_risk revert-risk prediction] via EventStreams
+* '''Source code:''' [https://github.com/wikiloop/doublecheck github.com/wikiloop/doublecheck]
+
+==Contributors Signup==
+If you are interested in [[m:WikiProject WikiLoop|Project WikiLoop]], want to follow its latest development, news, or try out its tools and datasets, or even better if you want to help the project, you are welcome to sign your Username here:
+
+===Editors===
+* [[User:Xinbenlv|Xinbenlv]] ([[User talk:Xinbenlv|talk]]) 22:02, 2 July 2019 (UTC)
+*[[User:Fuzheado|Fuzheado]] ([[User talk:Fuzheado|talk]]) 02:49, 9 July 2019 (UTC)
+*--[[User:Jorm|Jorm]] ([[User talk:Jorm|talk]]) 02:49, 10 July 2019 (UTC)
+*[[User:ElanHR|ElanHR]] ([[User talk:ElanHR|talk]]) 00:14, 16 July 2019 (UTC)
+* [[User:Chaoyuel|Chaoyuel]] ([[User talk:Chaoyuel|talk]]) 09:09, 30 July 2019 (UTC)
+*--''[[User: Eldarado |<span style="color:#1632E0;text-shadow:1px 1px 8px #324A6E;">eldarado</span>]]''[[İstifadəçi müzakirəsi:Eldarado |<sup><span style="color:#1632E0"> ✉ </span></sup>]] 06:09, 3 August 2019 (UTC)
+* [[User:Josve05a|Jonatan Svensson Glad]] ([[User talk:Josve05a|talk]]) 21:01, 4 August 2019 (UTC)
+* [[User:Llightex|Llightex]] ([[User talk:Llightex|talk]]) 01:02, 5 August 2019 (UTC)
+* [[User:mewestin|Monica Westin]] ([[User talk:mewestin|talk]]) 14:35, 5 August 2019 (UTC)
+*[[User:Sadads|Sadads]] ([[User talk:Sadads|talk]]) 21:25, 5 August 2019 (UTC)
+*___''[[User:CAPTAIN MEDUSA|<em style="font-family:grafolitascript;color:#aa6ef4">CAPTAIN MEDUSA</em>]]<small>[[User talk:CAPTAIN MEDUSA|'''<em style="font-family:grafolitascript;color:#000000">talk</em>''']]</small>'' 00:25, 1 September 2019 (UTC)
+*  [[User:LakesideMiners|<b><span style="color:#32CD32">LakesideMiners</span></b>]]<sup>[[User_Talk:LakesideMiners|My Talk Page]] </sup> 12:11, 10 October 2019 (UTC)
+* [[User:Carlojoseph14|carlojoseph14]] ([[User talk:Carlojoseph14|talk]]) 16:43, 26 October 2019 (UTC)
+* [[User:FULBERT|FULBERT]] ([[User talk:FULBERT|talk]]) 12:17, 10 November 2019 (UTC)
+* [[User:aaPle|aaPle]] ([[User talk:aaPle|talk]]) 12:43, 13 November 2019 (UTC)
+* <span style="color:#666">&ndash;&nbsp;[[User:Sj|SJ]][[User Talk:Sj|<span style="color:#f90;">&nbsp;+</span>]]</span>
+* '''[[User:J ansari|<span style="background:#5d9731; color:white;padding:2px;">J.  Ansari</span>]] [[User talk:J ansari|<span style="background:#1049AB; color:white; padding:2px;">Talk</span>]]'''  07:25, 10 December 2019 (UTC)
+* [[User:Joris Darlington Quarshie|Joris Darlington Quarshie]] ([[User talk:Joris Darlington Quarshie|talk]]) 14:08, 15 December 2019 (UTC)
+* [[User:NEHAOUA|NEHAOUA]] ([[User talk:NEHAOUA|talk]]) 08:23, 25 December 2019 (UTC)
+* [[User:A-NEUN|<span style="color: red">A-NEUN</span>]] [[User talk:A-NEUN|<span style="color: darkgreen">&#10686;TALK&#10686;</span>]] 09:36, 7 January 2020 (UTC)
+* [[User:Edi7*|<span style="font-family: Georgia; color: Teal">Edi</span><span style="font-family: Arial; color: Orange">7*</span>]] <sup>([[User Talk: Edi7*|Message Me!]] • [[Special:Contributions/Edi7*|<span style="color:#333">&#128220;</span>]])</sup> 01:14, 10 January 2020 (UTC)
+*[[User:The4lines|The4lines]] ([[User talk:The4lines|talk]]) 16:53, 10 January 2020 (UTC)The4lines
+* [[User:CAPTAIN RAJU|<span style="font-family: Bradley Hand ITC;">'''CAPTAIN RAJU'''</span>]]<sup>[[User_talk:CAPTAIN RAJU|(T)]]</sup> 20:47, 12 January 2020 (UTC)
+* [[User:Spy-cicle|<span style='color: #ceff00;background-color: #1e1e1e;'><b>&nbsp;Spy-cicle💥&nbsp;</b></span>]] [[User talk:Spy-cicle#top|<sup><span style='color: #ceff00;background-color: #1e1e1e;'><b>''Talk''?</b></span></sup>]] 21:20, 18 January 2020 (UTC)
+* [[User:CatcherStorm|<b><i><span style="text-shadow:3px 3px 4px darkgray;"><span style="color:#0000A0">CatcherStorm</span></span></i></b>]] [[User talk:CatcherStorm|<sup><i><span style="color:#2C3539">talk</span></i></sup>]]  07:30, 27 January 2020 (UTC)
+* [[User:Orphan Wiki|<span style="color: #1F5C32;">'''Orphan Wiki'''</span>]] 21:27, 29 January 2020 (UTC)
+* [[User:JaneciaTaylor|JaneciaTaylor]] ([[User talk:JaneciaTaylor|talk]]) 21:06, 9 February 2020 (UTC)
+*[[User:Alexcalamaro|Alexcalamaro]] ([[User talk:Alexcalamaro|talk]]) 21:21, 19 February 2020 (UTC)
+* [[User:The Lord of Math|tLoM <small>(The Lord of Math)</small>]] ([[User talk:The Lord of Math|Message]]) 10:30, 4 March 2020 (UTC)
+* —[[User:pythoncoder|<span style="color:#004080">python</span><span style="color:olive">coder</span>]]&nbsp;([[User talk:pythoncoder|talk]]&nbsp;&#124;&nbsp;[[Special:Contribs/pythoncoder|contribs]]) 16:15, 30 March 2020 (UTC)
+*[[User:Markworthen|<span style="color:#539;">&nbsp; - Mark D Worthen PsyD</span>]] [[User talk:Markworthen|<span style="color:#64B;">(talk)</span>]] <small><small>(I'm a man—traditional male pronouns are fine.)</small></small> 22:36, 9 April 2020 (UTC)
+* [[User:Bluerasberry|<span style="background:#cedff2;color:#11e">''' Blue Rasberry '''</span>]][[User talk:Bluerasberry|<span style="background:#cedff2;color:#11e">(talk)</span>]] 16:19, 20 April 2020 (UTC)
+* [[User:Daask|Daask]] ([[User talk:Daask|talk]]) 16:03, 20 May 2020 (UTC)
+* [[User:Macruzbar|Macruzbar]] ([[User talk:Macruzbar|talk]]) 17:04, 25 June 2020 (UTC)
+* --[[User:Jamesrichards12345|James Richards]] ([[User talk:Jamesrichards12345|talk]]) 14:55, 6 July 2020 (UTC)
+* '''[[User:Path slopu|<span style="color:Red">PA</span><span style="color:Green">TH</span>]] [[User talk:Path slopu|<span style="color:Blue">SL</span><span style="color:Maroon">OP</span><span style="color:Darkorange">U</span>]]''' 08:16, 24 July 2020 (UTC)
+*[[User:Tbiw|Tbiw]] ([[User talk:Tbiw|talk]]) 14:00, 7 August 2020 (UTC)
+* ( + make minor code contributions to the tool as @sohomdatta1 on GitHub) [[User:Sohom data|Sohom Datta]] ([[User talk:Sohom data|talk]]) 15:43, 7 August 2020 (UTC)
+*<span style="background:#444;padding:2px 12px;font-size:12px">[[User:Md Maruf Parvez|<span style="color:#fff">Maruf Parvez</span>]] <span style="color:#FC0;">❯❯❯</span> [[User talk:Md Maruf Parvez|<span style="color:#fff">Talk</span>]]</span> 11:05, 18 August 2020 (UTC)
+*[[User:Henry20090|Henry20090]] ([[User talk:Henry20090|talk]]) 00:13, 23 August 2020 (UTC)
+*[[User:Opalzukor|<em style="font-family:Times">Opal&#124;zukor</em>]]<sup>([[User talk:Opalzukor|discuss]])</sup> 20:43, 10 December 2020 (UTC)
+*[[User:TigerScientist|TigerScientist]] ([[User talk:TigerScientist|talk]]) 16:35, 16 December 2020 (UTC)
+* &ndash; [[User:Aseleste|<span style="font-family:monospace;color:red;text-shadow:-2px 2px 2px gold;">Ase1este</span>]]''<sup>[[User talk:Aseleste|<span style="color:green">t@lk</span>]]</sup><sub>[[Special:Contributions/Aseleste|c0ntribs]]</sub>'' 11:19, 15 January 2021 (UTC)
+*[[User:Parrotapocalypse|Parrotapocalypse]] ([[User talk:Parrotapocalypse|talk]]) 00:40, 19 March 2021 (UTC)
+*[[User:Ezlev|<span style="color:magenta;">ezlev.</span>]]<sup><span style="color:maroon;">[[User talk:Ezlev|talk]]</span></sup> 19:17, 22 March 2021 (UTC)
+*'''[[User:-Zai-|<span style="color: #1ec1fc;">Zai</span>]]''' <sup>([[User talk:-Zai-|💬]] • [[Special:Contributions/-Zai-|📝]] • [[Special:UserRights/-Zai-|⚡️]])</sup> 22:40, 29 April 2021 (UTC)
+*[[User:FeralOink|FeralOink]] ([[User talk:FeralOink|talk]]) 12:25, 5 June 2021 (UTC)
+*[[User:Ariconte|Ariconte]] ([[User talk:Ariconte|talk]]) 23:40, 20 June 2021 (UTC)
+*[[User:MrAgentSochi|MrAgentSochi]] ([[User talk:MrAgentSochi|talk]]) 19:57, 6 July 2021 (UTC)
+*[[User:Akim Ernest|Akim Ernest]] ([[User talk:Akim Ernest|talk]]) 01:13, 12 August 2021 (UTC)
+*[[User:RFZYNSPY|<b><span style="color:orange;">RFZYN</span><span style="color:purple;">SPY</span></b>]] <b><sup>**[[User talk:RFZYNSPY|<span style="color:blue;">talk</span>]]</sup></b> 22:24, 6 September 2021 (UTC)
+* [[User:Actualcpscm|Actualcpscm]] ([[User talk:Actualcpscm|talk]]) 00:24, 12 November 2022 (UTC)
+*[[User:SHenrichs|SHenrichs]] ([[User talk:SHenrichs|talk]])19:45, 6 September 2021 (UTC)
+*힋ㄾ힋[[User:Darkdeath-2]]힋ㄾ힋 11:49, 9 November 2021 (UTC)
+*[[User:Wakelamp|Wakelamp d&#91;@-@&#93;b]] ([[User talk:Wakelamp|talk]]) 10:48, 21 November 2021 (UTC)
+*[[User:EPEAviator|EPEAviator]] ([[User talk:EPEAviator|talk]]) 21:45, 13 March 2022 (UTC)
+*[[User:Mr Reading Turtle|𝕸𝕣 𝕽𝕖𝕒𝕕𝕚𝕟𝕘 𝕿𝕦𝕣𝕥𝕝𝕖 🇺🇦🇺🇦🇺🇦]] ([[User talk:Mr Reading Turtle|talk]]) 14:00, 14 May 2022 (UTC)
+*[[User:Smuckola|Smuckola]] — <span style="font-variant:small-caps">[[User:Smuckola|Smuckola]][[User talk:Smuckola|(talk)]]</span> 06:10, 10 August 2022 (UTC)
+* [[User:BenBrownBoy|<b style="font-variant:small-caps;border:2px solid #d32730;padding:0 9px;background:linear-gradient(#0842cd,#139c43);color:#f7eda1;border-radius:6px">BenBrownBoy</b>]] ([[User talk:BenBrownBoy|Aye?]]) 22:07, 19 September 2022 (UTC)
+* [[User:Msaskiw|Msaskiw]] ([[User talk:Msaskiw|talk]]) 10:19, March 1 2023 (UTC)
+*[[User:Bukky658|Bukky658]] ([[User talk:Bukky658|talk]]) 16:32, 27 June 2023 (UTC)
+
+=== Software developers ===
+Please add your name here and remember to star and fork our [https://github.com/wikiloop/doublecheck git repo].
+* [[User:Xinbenlv|<span style="color:#FF9933; font-weight:bold; font-family:monotype;">xinbenlv</span>]] <sup>[[User talk:Xinbenlv|<span style="color:#009933;">Talk</span>]], [[Template:ping|<span style="color:#009933;">Remember to "ping" me</span>]]</sup> 21:24, 9 December 2019 (UTC)
+* I hope you don't mind if I fork it somewhere Microsoft doesn't own. [[User:EllenCT|EllenCT]] ([[User talk:EllenCT|talk]]) 19:48, 5 August 2020 (UTC)
+
+=== Artificial intelligence researchers ===
+* [[User:Xinbenlv|<span style="color:#FF9933; font-weight:bold; font-family:monotype;">xinbenlv</span>]] <sup>[[User talk:Xinbenlv|<span style="color:#009933;">Talk</span>]], [[Template:ping|<span style="color:#009933;">Remember to "ping" me</span>]]</sup> 21:24, 9 December 2019 (UTC)
+* [[User:Joris Darlington Quarshie|<span style="color:#FF9933; font-weight:bold; font-family:monotype;">Joris Darlington Quarshie</span>]] <sup>[[User talk:Joris Darlington Quarshie|<span style="color:#009933;">Talk</span>]], [[Template:ping|<span style="color:#009933;">Remember to "ping" me</span>]]</sup> 14:12, 15 December 2019 (UTC)
+* I am researching [[Wikipedia_talk:Requests_for_comment/Harassment_solutions#Examples|similar tools]]. I helped with the design of [[WP:POPULARLOWQUALITY]]. [[User:EllenCT|EllenCT]] ([[User talk:EllenCT|talk]]) 19:50, 5 August 2020 (UTC)
+
+[[Category:Wikipedia counter-vandalism tools]]
