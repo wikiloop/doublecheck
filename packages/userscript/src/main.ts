@@ -76,52 +76,41 @@ function detectPageType(): "diff" | "recentchanges" | "watchlist" | "other" {
 }
 
 /**
- * Add a "DoubleCheck" link to the Wikipedia toolbar (like Twinkle does).
- * Uses mw.util.addPortletLink for native integration.
+ * Add a "DoubleCheck" tab to the Wikipedia page tabs (same level as Read, Edit, History, TW).
+ * Uses mw.util.addPortletLink with p-views for top-level visibility.
  */
 function addToolbarLink(): void {
   try {
     mw.loader.using(["mediawiki.util"], () => {
       const pageType = detectPageType();
+      const wiki = getWikiId();
+      const revId = pageType === "diff" ? getRevisionId() : null;
 
-      if (pageType === "diff") {
-        // On diff pages: open review modal for this specific revision
-        const link = mw.util.addPortletLink(
-          "p-cactions",
-          "#",
-          "DoubleCheck",
-          "ca-doublecheck",
-          "Review this edit with WikiLoop DoubleCheck",
-        );
-        if (link) {
-          link.addEventListener("click", async (e) => {
-            e.preventDefault();
-            const { mountDiffPanel } = await import("./injection/diff-panel.js");
-            mountDiffPanel();
-            // Also open the modal immediately
-            const { openReviewModal } = await import("./injection/modal.js");
-            const wiki = getWikiId();
-            const revId = getRevisionId();
-            if (revId) openReviewModal(wiki, revId);
-          });
-        }
-      } else {
-        // On all other pages: open the review feed
-        const link = mw.util.addPortletLink(
-          "p-cactions",
-          "#",
-          "DoubleCheck",
-          "ca-doublecheck",
-          "Open WikiLoop DoubleCheck review feed",
-        );
-        if (link) {
-          link.addEventListener("click", async (e) => {
-            e.preventDefault();
-            const { openReviewModal } = await import("./injection/modal.js");
-            const wiki = getWikiId();
-            openReviewModal(wiki, 0); // 0 = no specific revision, opens feed
-          });
-        }
+      // p-views = top-level page tabs (Read, Edit, View history) — always visible
+      const li = mw.util.addPortletLink(
+        "p-views",
+        "#",
+        "DoubleCheck",
+        "ca-doublecheck",
+        revId
+          ? "Review this edit with WikiLoop DoubleCheck"
+          : "Open WikiLoop DoubleCheck review feed",
+      );
+      if (!li) return;
+
+      // Attach click handler to the <a> inside the <li> to properly prevent navigation
+      const anchor = li.querySelector("a");
+      if (anchor) {
+        anchor.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const { openReviewModal, isModalOpen, closeReviewModal } = await import("./injection/modal.js");
+          if (isModalOpen()) {
+            closeReviewModal();
+          } else {
+            openReviewModal(wiki, revId ?? 0);
+          }
+        });
       }
     });
   } catch (err) {
