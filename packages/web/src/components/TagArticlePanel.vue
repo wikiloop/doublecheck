@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { CdxButton, CdxMessage, CdxCheckbox } from "@wikimedia/codex";
+import { CdxButton, CdxMessage, CdxCheckbox, CdxIcon } from "@wikimedia/codex";
+import { cdxIconTag } from "@wikimedia/codex-icons";
 import { useAuth } from "../composables/useAuth";
 
 const props = defineProps<{
@@ -11,6 +12,8 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { isLoggedIn } = useAuth();
+
+const expanded = ref(false);
 
 const TAG_OPTIONS = [
   { key: "unreferenced", labelKey: "Tag-Unreferenced" },
@@ -70,70 +73,85 @@ async function submitTags() {
 </script>
 
 <template>
-  <div
-    v-if="isLoggedIn"
-    class="dc-tag-panel"
-  >
-    <div class="dc-tag-panel__label">
-      {{ t("Label-SelectTags") }}
-    </div>
-
-    <div class="dc-tag-panel__options">
-      <CdxCheckbox
-        v-for="opt in TAG_OPTIONS"
-        :key="opt.key"
-        :model-value="isSelected(opt.key)"
-        :inline="true"
-        @update:model-value="toggleTag(opt.key)"
-      >
-        {{ t(opt.labelKey) }}
-      </CdxCheckbox>
-    </div>
-
-    <div class="dc-tag-panel__actions">
-      <CdxButton
-        action="progressive"
-        weight="primary"
-        :disabled="!hasSelection || submitting"
-        @click="submitTags"
-      >
-        <template v-if="submitting">{{ t("Label-Tagging") }}</template>
-        <template v-else>{{ t("Button-TagArticle") }}</template>
-      </CdxButton>
-    </div>
-
-    <div
-      v-if="result"
-      class="dc-tag-panel__messages"
+  <div v-if="isLoggedIn" class="dc-tag-panel">
+    <button
+      class="dc-tag-panel__toggle"
+      type="button"
+      @click="expanded = !expanded"
     >
-      <CdxMessage
-        v-if="result.success"
-        type="success"
-      >
-        {{ t("Message-TagSuccess") }}
-      </CdxMessage>
-      <CdxMessage
-        v-else
-        type="error"
-      >
-        {{ t("Message-TagFailed") }}: {{ result.error }}
-      </CdxMessage>
-    </div>
+      <CdxIcon :icon="cdxIconTag" size="small" />
+      {{ t("Button-MaintainArticle") }}
+    </button>
+
+    <template v-if="expanded">
+      <div class="dc-tag-panel__body">
+        <div class="dc-tag-panel__options">
+          <CdxCheckbox
+            v-for="opt in TAG_OPTIONS"
+            :key="opt.key"
+            :model-value="isSelected(opt.key)"
+            :inline="true"
+            @update:model-value="toggleTag(opt.key)"
+          >
+            {{ t(opt.labelKey) }}
+          </CdxCheckbox>
+        </div>
+
+        <div class="dc-tag-panel__actions">
+          <CdxButton
+            action="progressive"
+            weight="primary"
+            :disabled="!hasSelection || submitting"
+            @click="submitTags"
+          >
+            <template v-if="submitting">{{ t("Label-Tagging") }}</template>
+            <template v-else>{{ t("Button-TagArticle") }}</template>
+          </CdxButton>
+        </div>
+
+        <div v-if="result" class="dc-tag-panel__messages">
+          <CdxMessage v-if="result.success" type="success">
+            {{ t("Message-TagSuccess") }}
+          </CdxMessage>
+          <CdxMessage v-else type="error">
+            {{ t("Message-TagFailed") }}: {{ result.error }}
+          </CdxMessage>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .dc-tag-panel {
   margin-top: 0.5rem;
+}
+
+.dc-tag-panel__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  color: var(--color-progressive);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+}
+
+.dc-tag-panel__toggle:hover {
+  text-decoration: underline;
+}
+
+.dc-tag-panel__body {
+  margin-top: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: 100%;
-}
-
-.dc-tag-panel__label {
-  font-weight: 600;
-  font-size: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color-subtle);
+  border-radius: 8px;
+  background: var(--background-color-interactive-subtle);
 }
 
 .dc-tag-panel__options {

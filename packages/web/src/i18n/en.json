@@ -132,6 +132,7 @@
   "Label-WarnLevel3": "Level 3 — Warning",
   "Label-WarnLevel4": "Level 4 — Final warning",
   "Label-WarnLevel4im": "Level 4im — Only warning (severe)",
+  "Button-MaintainArticle": "Maintain article",
   "Button-TagArticle": "Tag Article",
   "Label-Tagging": "Tagging...",
   "Message-TagSuccess": "Maintenance tags added to article.",
