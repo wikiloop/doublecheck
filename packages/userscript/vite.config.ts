@@ -68,12 +68,10 @@ export default defineConfig({
     },
     outDir: "dist",
     rollupOptions: {
-      external: ["vue", "@wikimedia/codex", "@wikimedia/codex-icons"],
+      external: ["vue"],
       output: {
         globals: {
           vue: "Vue",
-          "@wikimedia/codex": "codex",
-          "@wikimedia/codex-icons": "codexIcons",
         },
       },
     },
