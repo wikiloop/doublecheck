@@ -1,0 +1,59 @@
+== WikiLoop DoubleCheck v5 — Complete rewrite, direct revert, and three ways to review ==
+
+Hi Wikipedians,
+
+We are excited to announce '''WikiLoop DoubleCheck v5''' — a complete ground-up rewrite of WikiLoop DoubleCheck (formerly WikiLoop Battlefield). This is the biggest update since the project was created in 2019, and we would love for you to try it out.
+
+=== What's new ===
+
+'''1. Three ways to use DoubleCheck'''
+
+You can now review edits from wherever you prefer:
+* '''[https://doublecheck.wikiloop.org/review Web app]''' — no installation needed, works in any browser
+* '''[https://en.wikipedia.org/wiki/Wikipedia:WikiLoop_DoubleCheck UserScript]''' — installs directly into Wikipedia; adds a review button on diff pages and risk badges on [[Special:RecentChanges]] and [[Special:Watchlist]]
+* '''[https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn Chrome Extension]''' — same functionality as the userscript, with a contribution heatmap popup
+
+'''2. Direct revert using your own Wikipedia session'''
+
+You can now revert vandalism directly from the DoubleCheck review interface. The revert is attributed to ''your'' Wikipedia account — no bot account involved. This includes:
+* One-click revert for simple vandalism
+* Rollback-style revert for consecutive edits by the same user
+* Good-faith revert option (for edits that are well-intentioned but incorrect)
+
+'''3. Twinkle-style patrol features'''
+
+For experienced editors, DoubleCheck now offers:
+* '''Warn user''' — post warning templates (levels 1–4 and 4im) to the editor's talk page after reverting
+* '''Thank author''' — send MediaWiki thanks notifications for good edits
+* '''Article tagging''' — add maintenance templates to articles (behind a toggle)
+* '''Auto-patrol''' — filter settings to focus on the edits that need your attention
+
+'''4. Real-time feed with ML scoring'''
+
+Edits are streamed live from [https://stream.wikimedia.org/ Wikimedia EventStreams] and scored by [https://wikitech.wikimedia.org/wiki/Machine_Learning/LiftWing LiftWing] (ORES damaging + good-faith) and [https://meta.wikimedia.org/wiki/Machine_learning_models/Proposed/Language-agnostic_revert_risk revert-risk prediction]. The feed prioritises the edits most likely to need human review.
+
+'''5. Keyboard shortcuts'''
+
+Review faster with keyboard shortcuts: '''R''' (revert), '''G''' (looks good), '''N''' (not sure + skip), '''Arrow keys''' (previous/next).
+
+'''6. Modern tech stack'''
+
+v5 is built with [[TypeScript]], [[Vue.js|Vue 3]], [[Node.js]] 20, and Wikimedia [[mw:Codex|Codex]] UI components. It is hosted on [[Toolforge]] and [[Vercel]], with source code at [https://github.com/wikiloop/doublecheck github.com/wikiloop/doublecheck] under the Apache-2.0 license.
+
+=== How to get started ===
+
+* '''Easiest:''' Visit [https://doublecheck.wikiloop.org/review doublecheck.wikiloop.org/review] and log in with your Wikipedia account
+* '''On-wiki:''' Click "Install DoubleCheck" on the [[Wikipedia:WikiLoop_DoubleCheck|project page]] to add the userscript
+* '''Chrome:''' Install the [https://chromewebstore.google.com/detail/wikiloop-doublecheck/efpakmfbfkbeoejabnbamnmpbmncippn extension from the Chrome Web Store]
+
+=== Get involved ===
+
+We are actively looking for more contributors — editors, software developers, and AI researchers. If you are interested, please add your name to the [[Wikipedia:WikiLoop_DoubleCheck#Contributors Signup|Contributors Signup]] section.
+
+* Report issues: [https://github.com/wikiloop/doublecheck/issues GitHub Issues]
+* Join chat: [https://discord.gg/daZXxPB Discord]
+* Leaderboard: [https://doublecheck.wikiloop.org/leaderboard /leaderboard]
+
+Thank you for supporting WikiLoop DoubleCheck!
+
+[[User:Xinbenlv|<span style="color:#FF9933; font-weight:bold; font-family:monotype;">xinbenlv</span>]] <sup>[[User talk:Xinbenlv|<span style="color:#009933;">Talk</span>]], [[Template:ping|<span style="color:#009933;">Remember to "ping" me</span>]]</sup>
