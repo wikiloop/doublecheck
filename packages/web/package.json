@@ -1,6 +1,6 @@
 {
   "name": "@doublecheck/web",
-  "version": "5.7.5",
+  "version": "5.7.6",
   "private": true,
   "type": "module",
   "scripts": {

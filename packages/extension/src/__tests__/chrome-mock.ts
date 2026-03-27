@@ -151,6 +151,9 @@ export const chromeMock = {
     getRedirectURL: vi.fn((path?: string) => `https://test-id.chromiumapp.org/${path ?? ""}`),
     launchWebAuthFlow: vi.fn(async () => ""),
   },
+  windows: {
+    create: vi.fn(async () => ({ id: 1 })),
+  },
   i18n: {
     getUILanguage: vi.fn(() => "en"),
   },

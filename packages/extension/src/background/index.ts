@@ -20,13 +20,26 @@ const ver = chrome.runtime.getManifest().version;
 chrome.action.setTitle({ title: `DoubleCheck v${ver} — Click to review` });
 
 chrome.action.onClicked.addListener((tab) => {
-  if (tab.id) {
+  if (tab.id && tab.url && /^https:\/\/\w+\.wikipedia\.org\//.test(tab.url)) {
+    // On Wikipedia: open modal overlay via content script
     chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL }).catch(() => {
-      // Content script not available (not on Wikipedia) — open dashboard
-      chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org/review" });
+      // Content script not ready — open popup window as fallback
+      openReviewPopup();
     });
+  } else {
+    // Not on Wikipedia: open review in a popup window (modal-like)
+    openReviewPopup();
   }
 });
+
+function openReviewPopup(): void {
+  chrome.windows.create({
+    url: "https://wikiloop-doublecheck.toolforge.org/review",
+    type: "popup",
+    width: 1000,
+    height: 750,
+  });
+}
 
 const API_BASE = "https://wikiloop-doublecheck.toolforge.org";
 
