@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /* global chrome */
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { MessageType, type AuthStatusResponse } from "../background/messages.js";
-import type { LeaderboardEntry } from "@doublecheck/core";
 
 declare const __GIT_HASH__: string;
 
@@ -12,11 +11,18 @@ const gitHash = __GIT_HASH__;
 const loading = ref(true);
 const loggedIn = ref(false);
 const username = ref("");
-const todayCount = ref(0);
-const recentActivity = ref<Array<{ revId: number; wiki: string; action: string; timestamp: string }>>([]);
-const leaderboard = ref<LeaderboardEntry[]>([]);
+const onWikipedia = ref(false);
+
+// Heatmap: map of "YYYY-MM-DD" → count
+const dayCounts = ref<Map<string, number>>(new Map());
 
 onMounted(async () => {
+  // Check if on Wikipedia
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    onWikipedia.value = !!tab?.url && /^https:\/\/\w+\.wikipedia\.org\//.test(tab.url);
+  } catch { /* no permission */ }
+
   await checkAuth();
   loading.value = false;
 });
@@ -29,9 +35,8 @@ async function checkAuth(): Promise<void> {
   loggedIn.value = response.loggedIn;
   if (response.loggedIn && response.username) {
     username.value = response.username;
-    await loadUserData(response.userId!);
+    await loadHeatmapData(response.userId!);
   }
-  await loadLeaderboard();
 }
 
 async function login(): Promise<void> {
@@ -43,6 +48,7 @@ async function login(): Promise<void> {
   loggedIn.value = response.loggedIn;
   if (response.loggedIn && response.username) {
     username.value = response.username;
+    await loadHeatmapData(response.userId!);
   }
   loading.value = false;
 }
@@ -51,214 +57,186 @@ async function logout(): Promise<void> {
   await chrome.runtime.sendMessage({ type: MessageType.AUTH_LOGOUT });
   loggedIn.value = false;
   username.value = "";
-  todayCount.value = 0;
-  recentActivity.value = [];
+  dayCounts.value = new Map();
 }
 
-async function loadUserData(userId: string): Promise<void> {
+async function loadHeatmapData(userId: string): Promise<void> {
   try {
     const response = await chrome.runtime.sendMessage({
       type: MessageType.API_REQUEST,
       id: `popup_history_${Date.now()}`,
       method: "GET",
-      path: `/api/user/${userId}/history`,
+      path: `/api/user/${userId}/history?limit=5000`,
     });
 
     if (response?.data?.judgements) {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-      const judgements = response.data.judgements as Array<{
-        revisionId: number;
-        revisionWiki: string;
-        action: string;
-        timestamp: string;
-      }>;
-
-      todayCount.value = judgements.filter(
-        (j) => new Date(j.timestamp) >= todayStart,
-      ).length;
-
-      recentActivity.value = judgements.slice(0, 5).map((j) => ({
-        revId: j.revisionId,
-        wiki: j.revisionWiki,
-        action: j.action,
-        timestamp: j.timestamp,
-      }));
+      const counts = new Map<string, number>();
+      for (const j of response.data.judgements as Array<{ timestamp: string }>) {
+        const day = j.timestamp.slice(0, 10); // "YYYY-MM-DD"
+        counts.set(day, (counts.get(day) || 0) + 1);
+      }
+      dayCounts.value = counts;
     }
   } catch {
     // Silently handle errors
   }
 }
-
-async function loadLeaderboard(): Promise<void> {
-  try {
-    const response = await chrome.runtime.sendMessage({
-      type: MessageType.API_REQUEST,
-      id: `popup_leaderboard_${Date.now()}`,
-      method: "GET",
-      path: "/api/leaderboard",
-    });
-
-    if (response?.data?.entries) {
-      leaderboard.value = (response.data.entries as LeaderboardEntry[]).slice(0, 10);
-    }
-  } catch {
-    // Silently handle errors
-  }
-}
-
-function formatAction(action: string): string {
-  switch (action) {
-    case "ShouldRevert": return "Should Revert";
-    case "NotSure": return "Not Sure";
-    case "LooksGood": return "Looks Good";
-    default: return action;
-  }
-}
-
-function formatTime(timestamp: string): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-const onWikipedia = ref(false);
-
-onMounted(async () => {
-  // Check if current tab is on Wikipedia
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    onWikipedia.value = !!tab?.url && /^https:\/\/\w+\.wikipedia\.org\//.test(tab.url);
-  } catch { /* no permission */ }
-});
 
 async function startReviewing(): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab?.id && onWikipedia.value) {
-    // On Wikipedia: open modal via content script
     try {
       await chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL });
       window.close();
       return;
     } catch { /* content script not loaded — fall through */ }
   }
-  // Not on Wikipedia or content script unavailable: open dashboard
+  // Not on Wikipedia: open dashboard in current tab
   await chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org/review" });
   window.close();
 }
+
+// ---- Heatmap grid computation ----
+
+interface HeatmapCell {
+  date: string; // "YYYY-MM-DD"
+  count: number;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+const heatmapWeeks = computed<HeatmapCell[][]>(() => {
+  const today = new Date();
+  const cells: HeatmapCell[][] = [];
+
+  // Start from 52 weeks ago, aligned to Sunday
+  const start = new Date(today);
+  start.setDate(start.getDate() - 363 - start.getDay());
+
+  for (let w = 0; w < 53; w++) {
+    const week: HeatmapCell[] = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + w * 7 + d);
+      if (date > today) {
+        week.push({ date: "", count: 0, level: 0 });
+        continue;
+      }
+      const key = date.toISOString().slice(0, 10);
+      const count = dayCounts.value.get(key) || 0;
+      const level: 0 | 1 | 2 | 3 | 4 =
+        count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 10 ? 3 : 4;
+      week.push({ date: key, count, level });
+    }
+    cells.push(week);
+  }
+  return cells;
+});
+
+const monthLabels = computed(() => {
+  const labels: { label: string; col: number }[] = [];
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 363 - start.getDay());
+
+  let lastMonth = -1;
+  for (let w = 0; w < 53; w++) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + w * 7);
+    const month = date.getMonth();
+    if (month !== lastMonth) {
+      labels.push({
+        label: date.toLocaleString("default", { month: "short" }),
+        col: w,
+      });
+      lastMonth = month;
+    }
+  }
+  return labels;
+});
+
+const totalContributions = computed(() => {
+  let total = 0;
+  for (const count of dayCounts.value.values()) {
+    total += count;
+  }
+  return total;
+});
 </script>
 
 <template>
   <div class="dc-popup">
     <header class="dc-popup-header">
-      <h1>WikiLoop DoubleCheck</h1>
+      <span class="dc-popup-title">DoubleCheck</span>
+      <span class="dc-popup-version">v{{ appVersion }}+{{ gitHash }}</span>
     </header>
 
-    <div
-      v-if="loading"
-      class="dc-popup-loading"
-    >
-      Loading...
-    </div>
+    <div v-if="loading" class="dc-popup-loading">Loading...</div>
 
     <template v-else>
-      <!-- Auth Section -->
+      <!-- Auth -->
       <section class="dc-popup-auth">
         <template v-if="loggedIn">
           <div class="dc-popup-user">
             <span class="dc-popup-username">{{ username }}</span>
-            <button
-              class="dc-popup-btn dc-popup-btn--small"
-              @click="logout"
-            >
-              Logout
-            </button>
-          </div>
-          <div class="dc-popup-stats">
-            <span class="dc-popup-stat">Today: <strong>{{ todayCount }}</strong> judgements</span>
+            <button class="dc-popup-btn dc-popup-btn--small" @click="logout">Logout</button>
           </div>
         </template>
         <template v-else>
-          <p class="dc-popup-login-prompt">
-            Log in to track your contributions
-          </p>
-          <button
-            class="dc-popup-btn dc-popup-btn--primary"
-            @click="login"
-          >
+          <button class="dc-popup-btn dc-popup-btn--login" @click="login">
             Login with Wikipedia
           </button>
         </template>
       </section>
 
-      <!-- Start Reviewing -->
-      <section class="dc-popup-section dc-popup-review">
-        <button
-          class="dc-popup-btn dc-popup-btn--review"
-          @click="startReviewing"
-        >
-          Start Reviewing
+      <!-- Contribution Heatmap -->
+      <section v-if="loggedIn" class="dc-popup-heatmap">
+        <div class="dc-heatmap-summary">
+          <strong>{{ totalContributions }}</strong> contributions this year
+        </div>
+        <div class="dc-heatmap-months">
+          <span
+            v-for="m in monthLabels"
+            :key="m.col"
+            class="dc-heatmap-month"
+            :style="{ gridColumn: m.col + 1 }"
+          >{{ m.label }}</span>
+        </div>
+        <div class="dc-heatmap-grid">
+          <template v-for="(week, wi) in heatmapWeeks" :key="wi">
+            <div
+              v-for="(cell, di) in week"
+              :key="`${wi}-${di}`"
+              class="dc-heatmap-cell"
+              :class="`dc-heatmap-level-${cell.level}`"
+              :title="cell.date ? `${cell.date}: ${cell.count} reviews` : ''"
+              :style="{ gridColumn: wi + 1, gridRow: di + 1 }"
+            />
+          </template>
+        </div>
+        <div class="dc-heatmap-legend">
+          <span class="dc-heatmap-legend-label">Less</span>
+          <div class="dc-heatmap-cell dc-heatmap-level-0" />
+          <div class="dc-heatmap-cell dc-heatmap-level-1" />
+          <div class="dc-heatmap-cell dc-heatmap-level-2" />
+          <div class="dc-heatmap-cell dc-heatmap-level-3" />
+          <div class="dc-heatmap-cell dc-heatmap-level-4" />
+          <span class="dc-heatmap-legend-label">More</span>
+        </div>
+      </section>
+
+      <!-- Review Now -->
+      <section class="dc-popup-review">
+        <button class="dc-popup-btn dc-popup-btn--review" @click="startReviewing">
+          Review Now
         </button>
       </section>
-
-      <!-- Recent Activity -->
-      <section
-        v-if="loggedIn && recentActivity.length > 0"
-        class="dc-popup-section"
-      >
-        <h2>Recent Activity</h2>
-        <ul class="dc-popup-activity">
-          <li
-            v-for="item in recentActivity"
-            :key="`${item.wiki}-${item.revId}-${item.timestamp}`"
-          >
-            <span class="dc-popup-activity-action">{{ formatAction(item.action) }}</span>
-            <span class="dc-popup-activity-rev">{{ item.wiki }}:{{ item.revId }}</span>
-            <span class="dc-popup-activity-time">{{ formatTime(item.timestamp) }}</span>
-          </li>
-        </ul>
-      </section>
-
-      <!-- Mini Leaderboard -->
-      <section
-        v-if="leaderboard.length > 0"
-        class="dc-popup-section"
-      >
-        <h2>Top Reviewers</h2>
-        <ol class="dc-popup-leaderboard">
-          <li
-            v-for="entry in leaderboard"
-            :key="entry.userId"
-          >
-            <span class="dc-popup-lb-rank">#{{ entry.rank }}</span>
-            <span class="dc-popup-lb-name">{{ entry.username }}</span>
-            <span class="dc-popup-lb-count">{{ entry.count }}</span>
-          </li>
-        </ol>
-      </section>
-
-      <!-- Quick Links -->
-      <section class="dc-popup-section dc-popup-links">
-        <a
-          href="https://wikiloop-doublecheck.toolforge.org"
-          target="_blank"
-          rel="noopener"
-        >
-          Open Dashboard
-        </a>
-      </section>
     </template>
-
-    <footer class="dc-popup-footer">
-      v{{ appVersion }}{{ gitHash ? '+' + gitHash : '' }}
-    </footer>
   </div>
 </template>
 
 <style scoped>
 .dc-popup {
-  width: 360px;
-  min-height: 300px;
+  width: 380px;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
@@ -266,15 +244,22 @@ async function startReviewing(): Promise<void> {
 }
 
 .dc-popup-header {
-  padding: 12px 16px;
-  background: #3366cc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #36c;
   color: #fff;
 }
 
-.dc-popup-header h1 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+.dc-popup-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dc-popup-version {
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 .dc-popup-loading {
@@ -284,7 +269,7 @@ async function startReviewing(): Promise<void> {
 }
 
 .dc-popup-auth {
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid #eaecf0;
 }
 
@@ -299,20 +284,6 @@ async function startReviewing(): Promise<void> {
   font-size: 14px;
 }
 
-.dc-popup-stats {
-  margin-top: 8px;
-  color: #54595d;
-}
-
-.dc-popup-stat strong {
-  color: #202122;
-}
-
-.dc-popup-login-prompt {
-  margin: 0 0 8px;
-  color: #54595d;
-}
-
 .dc-popup-btn {
   padding: 6px 12px;
   border: 1px solid #a2a9b1;
@@ -320,20 +291,11 @@ async function startReviewing(): Promise<void> {
   background: #fff;
   cursor: pointer;
   font-size: 13px;
+  font-family: inherit;
 }
 
 .dc-popup-btn:hover {
   background: #eaecf0;
-}
-
-.dc-popup-btn--primary {
-  background: #3366cc;
-  color: #fff;
-  border-color: #3366cc;
-}
-
-.dc-popup-btn--primary:hover {
-  background: #2a4b8d;
 }
 
 .dc-popup-btn--small {
@@ -341,102 +303,87 @@ async function startReviewing(): Promise<void> {
   font-size: 12px;
 }
 
-.dc-popup-section {
+.dc-popup-btn--login {
+  width: 100%;
+  padding: 8px 12px;
+  background: #36c;
+  color: #fff;
+  border-color: #36c;
+  font-weight: 500;
+}
+
+.dc-popup-btn--login:hover {
+  background: #2a4b8d;
+}
+
+/* ---- Heatmap ---- */
+.dc-popup-heatmap {
   padding: 12px 16px;
   border-bottom: 1px solid #eaecf0;
 }
 
-.dc-popup-section h2 {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #54595d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.dc-popup-activity {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.dc-popup-activity li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+.dc-heatmap-summary {
   font-size: 12px;
+  color: #54595d;
+  margin-bottom: 6px;
 }
 
-.dc-popup-activity-action {
-  font-weight: 500;
-  min-width: 90px;
+.dc-heatmap-summary strong {
+  color: #202122;
 }
 
-.dc-popup-activity-rev {
-  flex: 1;
-  color: #3366cc;
-}
-
-.dc-popup-activity-time {
+.dc-heatmap-months {
+  display: grid;
+  grid-template-columns: repeat(53, 1fr);
+  margin-bottom: 2px;
+  font-size: 9px;
   color: #72777d;
 }
 
-.dc-popup-leaderboard {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  counter-reset: none;
+.dc-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(53, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 1.5px;
 }
 
-.dc-popup-leaderboard li {
+.dc-heatmap-cell {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 1px;
+}
+
+.dc-heatmap-level-0 { background: #ebedf0; }
+.dc-heatmap-level-1 { background: #9be9a8; }
+.dc-heatmap-level-2 { background: #40c463; }
+.dc-heatmap-level-3 { background: #30a14e; }
+.dc-heatmap-level-4 { background: #216e39; }
+
+.dc-heatmap-legend {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 0;
-  font-size: 12px;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: 4px;
 }
 
-.dc-popup-lb-rank {
-  min-width: 28px;
-  font-weight: 600;
+.dc-heatmap-legend-label {
+  font-size: 9px;
   color: #72777d;
+  margin: 0 3px;
 }
 
-.dc-popup-lb-name {
-  flex: 1;
-}
-
-.dc-popup-lb-count {
-  font-weight: 500;
-  color: #54595d;
-}
-
-.dc-popup-links {
-  text-align: center;
-}
-
-.dc-popup-links a {
-  color: #3366cc;
-  text-decoration: none;
-}
-
-.dc-popup-links a:hover {
-  text-decoration: underline;
-}
-
+/* ---- Review button ---- */
 .dc-popup-review {
-  text-align: center;
-  padding: 16px;
+  padding: 12px 16px;
 }
 
 .dc-popup-btn--review {
   width: 100%;
   padding: 10px 16px;
-  background: #3366cc;
+  background: #36c;
   color: #fff;
-  border-color: #3366cc;
+  border-color: #36c;
   font-size: 14px;
   font-weight: 600;
   border-radius: 6px;
@@ -444,12 +391,5 @@ async function startReviewing(): Promise<void> {
 
 .dc-popup-btn--review:hover {
   background: #2a4b8d;
-}
-
-.dc-popup-footer {
-  padding: 8px 16px;
-  text-align: center;
-  font-size: 11px;
-  color: #a2a9b1;
 }
 </style>
