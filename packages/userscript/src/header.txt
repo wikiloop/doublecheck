@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WikiLoop DoubleCheck
-// @version      5.8.0
+// @version      5.8.1
 // @description  Crowdsourced vandalism review for Wikipedia
 // @namespace    https://doublecheck.wikiloop.org
 // @match        *://*.wikipedia.org/*

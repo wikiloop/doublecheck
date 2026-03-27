@@ -71,6 +71,7 @@ chrome.runtime.onMessage.addListener((message) => {
       // revId may be null (e.g. article page) — modal opens the review feed
       openReviewModal(wiki, revId);
     }
+    return true; // Signal to popup that the message was handled
   }
 });
 

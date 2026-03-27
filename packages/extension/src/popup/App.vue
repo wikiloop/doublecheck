@@ -83,16 +83,20 @@ async function loadHeatmapData(userId: string): Promise<void> {
 }
 
 async function startReviewing(): Promise<void> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id && onWikipedia.value) {
+  if (onWikipedia.value) {
+    // On Wikipedia: tell content script to open the modal, then close popup
     try {
-      await chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL });
-      window.close();
-      return;
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        chrome.tabs.sendMessage(tab.id, { type: MessageType.OPEN_MODAL });
+        // Close popup after a brief delay so the message is sent
+        setTimeout(() => window.close(), 100);
+        return;
+      }
     } catch { /* content script not loaded — fall through */ }
   }
-  // Not on Wikipedia: open dashboard in current tab
-  await chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org/review" });
+  // Not on Wikipedia: open dashboard
+  chrome.tabs.create({ url: "https://wikiloop-doublecheck.toolforge.org/review" });
   window.close();
 }
 
